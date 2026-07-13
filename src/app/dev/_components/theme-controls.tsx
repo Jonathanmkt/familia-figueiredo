@@ -4,23 +4,31 @@ import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { THEME_PRESETS, DEFAULT_PRESET, type ThemePresetId } from '@/lib/theme';
+import {
+  THEME_PRESETS,
+  DEFAULT_PRESET,
+  presetForcesDark,
+  type ThemePresetId,
+} from '@/lib/theme';
 
 /**
  * Barra de controle do tema (só páginas /dev): troca de preset + claro/escuro.
  * Escreve `data-theme` e a classe `.dark` no <html> — o CSS (globals.css) faz o resto.
+ * Presets de estética escura forçam `.dark` (ver theme.ts).
  */
 export function ThemeControls() {
   const [preset, setPreset] = useState<ThemePresetId>(DEFAULT_PRESET);
   const [dark, setDark] = useState(false);
+
+  const forcedDark = presetForcesDark(preset);
 
   useEffect(() => {
     document.documentElement.dataset.theme = preset;
   }, [preset]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-  }, [dark]);
+    document.documentElement.classList.toggle('dark', forcedDark || dark);
+  }, [forcedDark, dark]);
 
   return (
     <div className="surface-glass flex flex-wrap items-center gap-2 rounded-full px-2 py-1.5">
@@ -37,8 +45,14 @@ export function ThemeControls() {
         </Button>
       ))}
       <div className="mx-1 h-5 w-px bg-border" />
-      <Button variant="outline" size="icon-sm" onClick={() => setDark((d) => !d)} title="Claro/Escuro">
-        {dark ? <Sun /> : <Moon />}
+      <Button
+        variant="outline"
+        size="icon-sm"
+        onClick={() => setDark((d) => !d)}
+        disabled={forcedDark}
+        title={forcedDark ? 'Preset escuro (fixo)' : 'Claro/Escuro'}
+      >
+        {forcedDark || dark ? <Sun /> : <Moon />}
       </Button>
     </div>
   );
