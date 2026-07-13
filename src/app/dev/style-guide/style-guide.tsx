@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Moon, Sun, Search, Plus, Trash2 } from 'lucide-react';
+import { Search, Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,8 +31,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { ThemeControls } from '../_components/theme-controls';
 
-/** Bloco de seção com título. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
@@ -43,7 +42,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-/** Swatch de um token de cor. */
 function Swatch({ name, className }: { name: string; className: string }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -54,38 +52,31 @@ function Swatch({ name, className }: { name: string; className: string }) {
 }
 
 export function StyleGuide() {
-  const [dark, setDark] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-  }, [dark]);
-
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-foreground">
       <div className="mx-auto flex max-w-4xl flex-col gap-10 p-8">
-        {/* Header */}
-        <header className="flex items-center justify-between border-b pb-6">
+        {/* Header + controle de tema */}
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Style Guide</h1>
             <p className="text-sm text-muted-foreground">
-              Laboratório de tokens e componentes — Família Figueiredo
+              Schema de tokens + componentes — troque o preset pra reskin ao vivo
             </p>
           </div>
-          <Button variant="outline" size="icon" onClick={() => setDark((d) => !d)}>
-            {dark ? <Sun /> : <Moon />}
-          </Button>
+          <ThemeControls />
         </header>
 
         {/* Tokens de cor */}
         <Section title="Tokens de cor">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <Swatch name="primary (azul)" className="bg-primary" />
-            <Swatch name="brand (vermelho)" className="bg-brand" />
+            <Swatch name="primary" className="bg-primary" />
+            <Swatch name="brand" className="bg-brand" />
             <Swatch name="secondary" className="bg-secondary" />
             <Swatch name="muted" className="bg-muted" />
             <Swatch name="accent" className="bg-accent" />
             <Swatch name="border" className="bg-border" />
             <Swatch name="card" className="bg-card" />
+            <Swatch name="foreground" className="bg-foreground" />
           </div>
           <h3 className="mt-2 text-sm font-medium text-muted-foreground">Feedback</h3>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -98,20 +89,26 @@ export function StyleGuide() {
 
         {/* Superfícies */}
         <Section title="Superfícies e containers">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <Card>
               <CardHeader>
-                <CardTitle>Card</CardTitle>
-                <CardDescription>Superfície padrão de conteúdo.</CardDescription>
+                <CardTitle className="text-sm">Card</CardTitle>
+                <CardDescription>Conteúdo principal (bg-card).</CardDescription>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                Conteúdo do card sobre <code>bg-card</code>.
+                Superfície elevada. No preset navy-glass ganha vidro (blur) automático.
               </CardContent>
             </Card>
             <div className="rounded-xl border bg-muted p-6">
               <p className="text-sm font-medium">Container muted</p>
               <p className="text-sm text-muted-foreground">
-                Bloco neutro (<code>bg-muted</code>) para agrupar.
+                Bloco recuado (<code>bg-muted</code>) para agrupar.
+              </p>
+            </div>
+            <div className="surface-glass rounded-xl p-6">
+              <p className="text-sm font-medium">Container glass</p>
+              <p className="text-sm text-muted-foreground">
+                <code>.surface-glass</code>: vidro que se adapta a qualquer preset.
               </p>
             </div>
           </div>
@@ -123,20 +120,16 @@ export function StyleGuide() {
             <h1 className="text-3xl font-bold tracking-tight">Título H1</h1>
             <h2 className="text-2xl font-semibold tracking-tight">Título H2</h2>
             <h3 className="text-xl font-semibold">Título H3</h3>
-            <p className="text-base">
-              Parágrafo padrão. O texto do corpo herda a fonte Geist.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Texto secundário / muted-foreground.
-            </p>
+            <p className="text-base">Parágrafo padrão, na fonte Geist.</p>
+            <p className="text-sm text-muted-foreground">Texto secundário / muted-foreground.</p>
           </div>
         </Section>
 
         {/* Botões */}
         <Section title="Botões — variantes">
           <div className="flex flex-wrap items-center gap-3">
-            <Button>Default (azul)</Button>
-            <Button variant="brand">Brand (vermelho)</Button>
+            <Button>Default</Button>
+            <Button variant="brand">Brand</Button>
             <Button variant="secondary">Secondary</Button>
             <Button variant="outline">Outline</Button>
             <Button variant="ghost">Ghost</Button>
@@ -168,6 +161,9 @@ export function StyleGuide() {
             <Badge variant="secondary">Secondary</Badge>
             <Badge variant="outline">Outline</Badge>
             <Badge variant="destructive">Destructive</Badge>
+            <Badge variant="success">Success</Badge>
+            <Badge variant="warning">Warning</Badge>
+            <Badge variant="info">Info</Badge>
           </div>
         </Section>
 
@@ -208,7 +204,7 @@ export function StyleGuide() {
               <DialogHeader>
                 <DialogTitle>Exemplo de modal</DialogTitle>
                 <DialogDescription>
-                  Diálogo padrão do shadcn sobre o tema da Família Figueiredo.
+                  Diálogo padrão do shadcn — re-skina junto com o preset.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
