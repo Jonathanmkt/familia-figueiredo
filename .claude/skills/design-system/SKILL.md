@@ -1,65 +1,90 @@
 ---
 description: >-
-  Guia de cores e tema da Família Figueiredo (web). Use SEMPRE que criar/alterar qualquer
-  coisa de aparência: cor, fundo, borda, botão, campo, badge, estado (hover/foco/disabled),
-  ou escolher "qual cor usar aqui". Baseado no brasão da família: azul dominante + vermelho
-  de contraste. Complementa a skill global `ui-foundations` (shadcn/lucide) — aqui é o TEMA
-  específico do projeto. Regra de ouro: a cor mora no token (globals.css), nunca na tela.
+  Gestão de UI / design system do projeto (web). Use SEMPRE que criar ou alterar QUALQUER coisa de
+  aparência: cor, fundo, borda, superfície, botão, campo, badge, tab, card, container, estado
+  (hover/foco/disabled), tema, ou escolher "qual cor/token usar aqui". Baseada em SCHEMA DE TOKENS +
+  PRESETS trocáveis (data-theme). Complementa a skill global `ui-foundations` (setup shadcn/lucide) —
+  aqui é a governança do TEMA deste projeto. Regra de ouro: a decisão de estilo mora no token/
+  componente, nunca na tela. Base importável do acervo `playbook` (ui/), adaptável por projeto.
 ---
 
-# Design System — Família Figueiredo
+# Design System — gestão de UI (base de presets)
 
-Tema derivado do **brasão da família**: **azul dominante** com **vermelho de contraste**
-(modelo TIM — azul é o *ambiente*, vermelho é a *atenção*). Montado sobre shadcn/ui + Tailwind v4.
-Os tokens vivem em `src/app/globals.css` (`:root` = light, `.dark` = dark, mapeados em `@theme inline`).
+> 🔧 **ESTE ARQUIVO É UMA BASE.** Cada projeto copia e adapta nos pontos marcados `🔧 ADAPTAR`.
+> Origem: `github.com/Jonathanmkt/playbook` → `skills/design-system`. Vem junto com as entradas
+> `ui/theme-system`, `ui/components`, `ui/page-style-guide`, `ui/page-painel`.
+
+Tema baseado em **schema de tokens + presets**: o schema (nomes de token) é o contrato; cada
+**preset** preenche com valores. Trocar preset = `data-theme` no `<html>`. Tailwind v4 (oklch),
+efeito **glass** como propriedade do preset.
+
+> 🔧 **ADAPTAR — identidade do projeto:** preset padrão e marca.
+> - Projeto atual (Família Figueiredo): preset default **`glass-brasao`** (vidro navy do Idealis +
+>   vermelho do brasão). Marca: `--primary` azul, `--brand` vermelho `#EC0019`.
+> - Num projeto novo: defina o preset default e os valores da marca (ver `ui/theme-system`).
 
 ## Regra de ouro
 
-**A decisão de cor mora no token/componente, NUNCA na tela.** Precisa mudar uma cor? Muda o token
-no `globals.css` (propaga pro sistema) ou a variante no componente (`src/components/ui/`). Não cole
-`bg-[#...]` nem cor literal numa instância.
+**A decisão de estilo mora no token (`globals.css`) ou no componente (`ui/`), NUNCA na tela.**
+Mudou a cor de um campo? Muda no componente/token → propaga pro sistema. Não cole `bg-[#...]` nem
+classe de cor/fundo/borda numa instância. **Nomeie por papel** (`--primary`, `--brand`), nunca por
+cor — quando a cor mudar, o nome continua verdadeiro.
 
-**Nomeie por papel, não por cor:** `primary` (não "azul"), `brand` (não "vermelho"). Quando a cor
-mudar, o nome continua verdadeiro.
+## Fonte da verdade (arquivos)
 
-## Paleta crua (fonte)
+- `src/app/globals.css` — o schema (`@theme inline`) + blocos de preset (`[data-theme=…]`) + regras
+  de fundo/glass. **É aqui que a cor mora.**
+- `src/lib/theme.ts` — lista de presets + `presetForcesDark()`.
+- `.../theme-controls.tsx` — seletor de preset + claro/escuro (laboratório/proposta).
+- `/dev/style-guide` e `/dev/painel` — laboratório visual (ver tudo junto, calibrar).
 
-| Cor | Hex | oklch | Papel |
-|---|---|---|---|
-| Azul do brasão | `#28245D` | ~`oklch(0.30 0.099 282)` | marca dominante → `--primary` |
-| Vermelho do brasão | `#EC0019` | ~`oklch(0.593 0.241 27)` | acento de destaque → `--brand` |
-| Neutros | — | cinzas **levemente azulados** (chroma ~0.008–0.02 no hue 282) | 90% da UI |
+## Presets (como funciona)
 
-## Tokens semânticos (o que usar)
+Um preset = um bloco `[data-theme='x'] { --token: valor; … }` no `globals.css` + uma linha em
+`theme.ts`. Presets podem **herdar** de outro (ex.: `glass-brasao` herda `navy-glass` e só troca a
+marca). Adicionar preset ≈ 5 linhas.
 
-- **Marca:** `bg-primary`/`text-primary-foreground` (azul, ação principal) · `bg-brand`/`text-brand-foreground` (vermelho, destaque raro).
-- **Neutros:** `background`, `foreground`, `card`, `popover`, `muted`(+`-foreground`), `secondary`, `accent`, `border`, `input`.
-- **Foco:** `ring` (azul).
-- **Feedback:** `destructive` (perigo), `success` (verde, hue 150), `warning` (âmbar, hue 75),
-  `info` (azul-claro, hue 240 — distinto do primary). Todos com `-foreground` pareado.
-- **Estados (derivados, não são tokens novos):** hover = cor a 80–90% (`bg-primary/80`);
-  foco = `ring`; disabled = `opacity-50`.
+> 🔧 **ADAPTAR — presets do projeto:** os valores oklch de cada preset (paleta, superfícies).
+> Método pra extrair um preset de uma referência (print/tweakcn): pegue as cores e converta pra
+> oklch (não chute na mão — use script de conversão). Ver `ui/theme-system`.
 
-Tudo tem versão **light** e **dark**. No dark o `primary` é **clareado** (senão o botão some no
-fundo escuro) — contraste é obrigação.
+## Componentes customizados (não são o shadcn cru)
 
-## ⚠️ Disciplina do vermelho (decore)
+- `Button` variante **`brand`** (`bg-brand`) além das padrão.
+- `Badge` variantes de **feedback**: `brand`, `success`, `warning`, `info`.
+- `Tabs` com **pílula deslizante** animada (framer-motion `layoutId`), token-driven (`--primary`).
 
-`--brand` (marca) e `--destructive` (perigo) são a **mesma família de vermelho**, com **papéis
-separados por regra**:
+Ao rodar `shadcn add`, **substitua** esses pelos do acervo (`ui/components`) — senão perde os extras.
 
-- **`brand`** → destaque de marca, CTA especial, selo de destaque. **Raro** e de propósito.
-- **`destructive`** → excluir, erro, ação perigosa.
-- ❌ **Nunca** use `brand` num botão comum (é isso que mantém o vermelho impactante).
+## Glass = propriedade do preset
 
-## O que NÃO fazer
+Superfície de vidro não é decisão de tela: `--card` translúcido + blur via `[data-slot='card']` no
+preset glass. Nenhum componente sabe que é "vidro" — quem decide é o `data-theme`. Container manual
+glass: classe `.surface-glass` (adapta a qualquer fundo).
 
-❌ Cor literal na tela (`bg-[#28245D]`, `style={{color:...}}`) — use o token.
-❌ Nomear token por cor (`--azul`) em vez de papel (`--primary`).
-❌ Espalhar `brand`/vermelho pela UI — mata o contraste.
-❌ Texto sem par de contraste — sempre a dupla `superfície` + `-foreground`.
+## ⚠️ Pegadinhas (decore)
 
-## Referências
+1. **Preset de fundo escuro PRECISA da classe `.dark`.** Os componentes shadcn escondem o tema
+   escuro atrás de `dark:` — sem a classe, a aba/campo ativo cai no tom claro e fica preto no fundo
+   escuro. Marque o preset com `forceDark` no `theme.ts` (o controle liga o `.dark`).
+2. **Reinicie o dev server após `shadcn add` / instalar dep / mudança grande de vários arquivos.**
+   O HMR do webpack embola (CSS congela/vazio). Fix: matar + `rm -rf .next` + subir. E **verifique a
+   app RODANDO, não só o `build`** — build verde ≠ tela certa.
+3. **`brand` ≠ `destructive`.** Mesmo quando a cor é parecida (vermelho), papéis separados: `brand`
+   = destaque de marca raro; `destructive` = perigo. Nunca `brand` em botão comum.
+4. **Nada de cor literal na tela** (`bg-[#...]`, `style={{color}}`), nem token de superfície
+   (`bg-background`/`bg-card`) colado em campo/botão.
 
-- Tokens: `src/app/globals.css` · Laboratório visual: **`/dev/style-guide`** (toggle light/dark).
-- Método reaproveitável (setup de tema em projeto novo): skill global `ui-foundations` + (futura) `design-system-setup`.
+## Como evoluir o design system
+
+1. **Token** (`globals.css`) → 2. **Componente** (`ui/`) → 3. **Receita** (padrão que se repete:
+   footer de modal, filtro, lista) → 4. **Documente aqui**. Destile tokens usando o `/dev/style-guide`
+   e o `/dev/painel` como tela-laboratório.
+
+> 🔧 **ADAPTAR — receitas:** documente aqui os padrões repetidos DESTE projeto conforme surgirem.
+
+## Vem do acervo
+
+Base + arquivos prontos em `github.com/Jonathanmkt/playbook`:
+`ui/theme-system`, `ui/components`, `ui/page-style-guide`, `ui/page-painel`, e esta skill em
+`skills/design-system`. Clone, copie, adapte os pontos `🔧 ADAPTAR`. Complementa `ui-foundations` (global).
