@@ -6,7 +6,7 @@ App da Família Figueiredo. Stack inspirada no **Idealis Core**: Next.js (App Ro
 
 - **Next.js 15** (App Router) + **React 19**
 - **TypeScript** (strict) — alias `@/*` aponta para `src/*`
-- **Tailwind CSS 3.4**
+- **Tailwind CSS 4** (CSS-first: `@import 'tailwindcss'` + `@theme`, sem `tailwind.config`)
 - **Supabase** (`@supabase/ssr`) — clientes em `src/lib/supabase/`
 
 ## Começando

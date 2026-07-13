@@ -20,7 +20,7 @@ Ainda não há suíte de testes automatizados; validação = `type-check` + `lin
 ## Convenções
 
 - **Alias de import**: `@/*` → `src/*` (definido no `tsconfig.json`).
-- **Tailwind 3.4** — não migrar para v4.
+- **Tailwind 4** (CSS-first). Config mora no `src/app/globals.css` via `@import 'tailwindcss'` + `@theme` — **não** existe `tailwind.config.*`. PostCSS usa `@tailwindcss/postcss`. Utilitários renomeados no v4 (ex.: `shadow-sm`→`shadow-xs`, `outline-none`→`outline-hidden`, `ring` = 1px); não misturar sintaxe v3.
 - **Supabase**: cliente de browser em `src/lib/supabase/client.ts`; cliente de servidor em `src/lib/supabase/server.ts`. A `SUPABASE_SERVICE_ROLE_KEY` é **só server**, nunca no client.
 - **Segredos**: `.env*` está no `.gitignore`. Nunca commitar chaves.
 
