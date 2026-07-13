@@ -1,0 +1,191 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import {
+  Home,
+  Users,
+  CalendarDays,
+  Wallet,
+  FileText,
+  Settings,
+  Search,
+  Plus,
+  Bell,
+  Moon,
+  Sun,
+  TrendingUp,
+} from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+
+const NAV = [
+  { icon: Home, label: 'Início', active: true },
+  { icon: Users, label: 'Membros' },
+  { icon: CalendarDays, label: 'Eventos' },
+  { icon: Wallet, label: 'Finanças' },
+  { icon: FileText, label: 'Documentos' },
+  { icon: Settings, label: 'Configurações' },
+];
+
+const STATS = [
+  { icon: Users, label: 'Membros', value: '14', trend: '+2 este ano', tone: 'success' as const },
+  { icon: CalendarDays, label: 'Próximos eventos', value: '3', trend: 'esta semana', tone: 'brand' as const },
+  { icon: Bell, label: 'Avisos', value: '5', trend: '2 novos', tone: 'muted' as const },
+  { icon: Wallet, label: 'Caixa da família', value: 'R$ 1.240', trend: '+8%', tone: 'success' as const },
+];
+
+const EVENTOS = [
+  { dia: '12', mes: 'JUL', titulo: 'Aniversário da Vó Maria', sub: '19h · Casa da Vó', badge: 'Destaque', variant: 'brand' as const },
+  { dia: '15', mes: 'JUL', titulo: 'Almoço de domingo', sub: '12h · Chácara', badge: 'Confirmado', variant: 'secondary' as const },
+  { dia: '20', mes: 'JUL', titulo: 'Reunião de família', sub: '20h · Online', badge: 'Planejando', variant: 'outline' as const },
+];
+
+const AVISOS = [
+  { titulo: 'Mensalidade do clube paga', variant: 'success' as const, label: 'Ok' },
+  { titulo: 'Renovar seguro do carro', variant: 'warning' as const, label: 'Pendente' },
+  { titulo: 'Nova foto no álbum da família', variant: 'info' as const, label: 'Info' },
+  { titulo: 'Documento vencido: RG do Pedro', variant: 'destructive' as const, label: 'Urgente' },
+];
+
+function toneClass(tone: 'success' | 'brand' | 'muted') {
+  if (tone === 'brand') return 'text-brand';
+  if (tone === 'muted') return 'text-muted-foreground';
+  return 'text-success';
+}
+
+export function Painel() {
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+  }, [dark]);
+
+  return (
+    <div className="flex h-screen bg-background text-foreground">
+      {/* Sidebar */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
+        <div className="flex h-14 items-center gap-2 border-b px-5">
+          <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <span className="text-sm font-bold">F</span>
+          </div>
+          <span className="text-sm font-semibold">Família Figueiredo</span>
+        </div>
+        <nav className="flex flex-col gap-1 p-3">
+          {NAV.map((item) => (
+            <button
+              key={item.label}
+              className={
+                item.active
+                  ? 'flex items-center gap-3 rounded-md bg-primary/10 px-3 py-2 text-sm font-medium text-primary'
+                  : 'flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+              }
+            >
+              <item.icon className="size-4" />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Área principal */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Topbar */}
+        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b px-6">
+          <div>
+            <h1 className="text-base font-semibold leading-none">Início</h1>
+            <p className="text-xs text-muted-foreground">Visão geral da família</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative hidden sm:block">
+              <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Buscar..." className="h-9 w-48 pl-8" />
+            </div>
+            <Button variant="brand">
+              <Plus /> Novo evento
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => setDark((d) => !d)}>
+              {dark ? <Sun /> : <Moon />}
+            </Button>
+            <div className="size-8 rounded-full bg-muted" />
+          </div>
+        </header>
+
+        {/* Conteúdo */}
+        <main className="flex-1 overflow-auto p-6">
+          <div className="mx-auto flex max-w-5xl flex-col gap-6">
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {STATS.map((s) => (
+                <Card key={s.label}>
+                  <CardContent className="flex flex-col gap-1 pt-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{s.label}</span>
+                      <s.icon className="size-4 text-muted-foreground" />
+                    </div>
+                    <span className="text-2xl font-bold">{s.value}</span>
+                    <span className={`flex items-center gap-1 text-xs ${toneClass(s.tone)}`}>
+                      <TrendingUp className="size-3" /> {s.trend}
+                    </span>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Próximos eventos */}
+              <Card className="lg:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Próximos eventos</CardTitle>
+                  <Button variant="ghost" size="sm">
+                    Ver todos
+                  </Button>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2">
+                  {EVENTOS.map((e) => (
+                    <div
+                      key={e.titulo}
+                      className="flex items-center gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-md bg-muted">
+                        <span className="text-base font-bold leading-none">{e.dia}</span>
+                        <span className="text-[10px] text-muted-foreground">{e.mes}</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{e.titulo}</p>
+                        <p className="text-xs text-muted-foreground">{e.sub}</p>
+                      </div>
+                      <Badge variant={e.variant}>{e.badge}</Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Avisos */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Avisos</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  {AVISOS.map((a) => (
+                    <div key={a.titulo} className="flex items-start justify-between gap-3">
+                      <p className="text-sm">{a.titulo}</p>
+                      <Badge variant={a.variant}>{a.label}</Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
