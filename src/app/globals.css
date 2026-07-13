@@ -146,8 +146,10 @@
   --sidebar-ring: oklch(0.62 0.13 282);
 }
 
-/* ── PRESET: navy-glass (referência Idealis Core) — azul #0055c7 + dourado, vidro ── */
-[data-theme='navy-glass'] {
+/* ── PRESET: navy-glass (referência Idealis Core) — azul #0055c7 + dourado, vidro ──
+   glass-brasao herda TODO este bloco (mesmo vidro navy) e só troca a marca abaixo. */
+[data-theme='navy-glass'],
+[data-theme='glass-brasao'] {
   --background: oklch(0.153 0.046 259);
   --foreground: oklch(0.98 0.01 259);
   --card: oklch(1 0 0 / 6%);
@@ -189,6 +191,14 @@
   --sidebar-accent-foreground: oklch(0.98 0.01 259);
   --sidebar-border: oklch(1 0 0 / 12%);
   --sidebar-ring: oklch(0.55 0.19 259.5);
+}
+
+/* ── PRESET: glass-brasao — o vidro navy do Idealis, mas com o VERMELHO do brasão
+   no lugar do dourado (só o delta; o resto vem do bloco navy-glass acima). ── */
+[data-theme='glass-brasao'] {
+  --brand: oklch(0.62 0.24 27);
+  --brand-foreground: oklch(0.99 0 0);
+  --chart-2: oklch(0.62 0.24 27);
 }
 
 /* ── PRESET: neutral (base shadcn) ── */
@@ -277,7 +287,8 @@
    O navy-glass usa o gradiente azul-marinho fixo (referência Idealis); os
    demais usam a cor sólida do token --background. Roots de página ficam
    transparentes p/ deixar o fundo do body aparecer (ver páginas /dev). */
-[data-theme='navy-glass'] body {
+[data-theme='navy-glass'] body,
+[data-theme='glass-brasao'] body {
   background:
     radial-gradient(circle at 20% 15%, rgba(0, 85, 199, 0.28), transparent 45%),
     radial-gradient(circle at 80% 10%, rgba(7, 61, 145, 0.3), transparent 40%),
@@ -287,7 +298,8 @@
 
 /* Vidro automático: no preset navy-glass, todo Card ganha blur (o --card já é
    translúcido). Assim o "glass" é uma propriedade do PRESET, não da tela. */
-[data-theme='navy-glass'] [data-slot='card'] {
+[data-theme='navy-glass'] [data-slot='card'],
+[data-theme='glass-brasao'] [data-slot='card'] {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }

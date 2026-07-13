@@ -4,7 +4,8 @@
 // de tokens correspondente no globals.css.
 export const THEME_PRESETS = [
   { id: 'brasao', label: 'Brasão', hint: 'Azul do brasão + vermelho' },
-  { id: 'navy-glass', label: 'Navy Glass', hint: 'Referência Idealis Core (vidro)' },
+  { id: 'navy-glass', label: 'Navy Glass', hint: 'Referência Idealis Core (dourado)' },
+  { id: 'glass-brasao', label: 'Glass Brasão', hint: 'Vidro navy + vermelho do brasão' },
   { id: 'neutral', label: 'Neutro', hint: 'Base shadcn (do zero)' },
 ] as const;
 
