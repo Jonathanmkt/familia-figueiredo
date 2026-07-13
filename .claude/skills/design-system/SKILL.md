@@ -62,6 +62,23 @@ Superfície de vidro não é decisão de tela: `--card` translúcido + blur via 
 preset glass. Nenhum componente sabe que é "vidro" — quem decide é o `data-theme`. Container manual
 glass: classe `.surface-glass` (adapta a qualquer fundo).
 
+## Movimento / animações
+
+Mesma regra de ouro: **o movimento mora no token** (`src/lib/motion.ts`) e nos componentes globais,
+nunca solto na tela. Biblioteca: **`framer-motion`** (precisa instalar: `npm i framer-motion`).
+
+- Tokens em `src/lib/motion.ts`: molas (`springSoft`, `springSnap`), durações (`motionDur`), easing
+  (`easeOut`), `tapFeedback`, e variantes (`tabContentVariants`, `listContainer`/`listItem`).
+- Padrões prontos: **Tabs** com pílula deslizante (`layoutId` + `springSoft`) + entrada do conteúdo
+  (`tabContentVariants`); **lista em cascata** (`listContainer` no container + `listItem` no item);
+  **tap** (`whileTap={tapFeedback}`).
+- Princípios: mola > tempo fixo; 150–320ms; animar só `transform`/`opacity` (ou `layout`); em lista
+  com scroll infinito animar o ITEM, não o container.
+
+> 🔧 **ADAPTAR — movimento:** os valores de mola/duração são um ponto de partida; ajuste ao gosto do
+> projeto. Ampliações (AnimatedNumber, transição de página) entram como novas entradas/componentes.
+> Base pronta no acervo: `ui/motion`.
+
 ## ⚠️ Pegadinhas (decore)
 
 1. **Preset de fundo escuro PRECISA da classe `.dark`.** Os componentes shadcn escondem o tema

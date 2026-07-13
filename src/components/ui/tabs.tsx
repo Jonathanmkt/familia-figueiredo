@@ -5,9 +5,7 @@ import { Tabs as TabsPrimitive } from 'radix-ui';
 import { motion } from 'framer-motion';
 
 import { cn } from '@/lib/utils';
-
-// Mola do deslize da pílula (suave). Inspirado no Idealis, mas token-driven.
-const springSoft = { type: 'spring' as const, stiffness: 400, damping: 32 };
+import { springSoft, tabContentVariants } from '@/lib/motion';
 
 // Contexto: espelha o valor ativo + um layoutId único por grupo de abas
 // (evita que a pílula "pule" entre dois <Tabs> na mesma tela).
@@ -101,7 +99,7 @@ function TabsContent({
 }: React.ComponentProps<typeof TabsPrimitive.Content>) {
   return (
     <TabsPrimitive.Content data-slot="tabs-content" className={cn('outline-none', className)} {...props}>
-      <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+      <motion.div variants={tabContentVariants} initial="hidden" animate="show">
         {children}
       </motion.div>
     </TabsPrimitive.Content>
