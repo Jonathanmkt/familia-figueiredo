@@ -10,9 +10,12 @@ export default function Home() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Base pronta: Next.js 15 + Tailwind v4 + shadcn/ui (Radix) + lucide. Bora construir. 🚀
+            Tema do brasão: azul dominante, vermelho em contraste.
           </p>
-          <Button>Começar</Button>
+          <div className="flex gap-3">
+            <Button>Ação principal</Button>
+            <Button variant="brand">Destaque</Button>
+          </div>
         </CardContent>
       </Card>
     </main>
