@@ -84,9 +84,15 @@ export function StyleGuide() {
             <Swatch name="secondary" className="bg-secondary" />
             <Swatch name="muted" className="bg-muted" />
             <Swatch name="accent" className="bg-accent" />
-            <Swatch name="destructive" className="bg-destructive" />
             <Swatch name="border" className="bg-border" />
             <Swatch name="card" className="bg-card" />
+          </div>
+          <h3 className="mt-2 text-sm font-medium text-muted-foreground">Feedback</h3>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Swatch name="destructive" className="bg-destructive" />
+            <Swatch name="success" className="bg-success" />
+            <Swatch name="warning" className="bg-warning" />
+            <Swatch name="info" className="bg-info" />
           </div>
         </Section>
 
