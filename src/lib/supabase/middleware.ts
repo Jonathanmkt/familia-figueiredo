@@ -38,17 +38,25 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
 
-  // Rotas públicas (não exigem login). Adapte por projeto:
-  // - '/' landing, '/auth/*' fluxo de auth, '/dev/*' laboratório (só em dev).
+  // ── Roteamento por estado de login ──────────────────────────────────────
+  // 🔧 ADAPTAR: destino do usuário logado (home autenticada). Hoje /protected.
+  const AFTER_LOGIN = '/protected'
   const path = request.nextUrl.pathname
+
+  // Rotas públicas (não exigem login): fluxo de auth + laboratório /dev (só em dev).
   const isPublic =
-    path === '/' ||
     path.startsWith('/auth') ||
-    path.startsWith('/login') ||
     (path.startsWith('/dev') && process.env.NODE_ENV === 'development')
 
+  // Já logado não precisa da raiz "burra" nem de login/cadastro → vai pro app.
+  if (user && (path === '/' || path === '/auth/login' || path === '/auth/sign-up')) {
+    const url = request.nextUrl.clone()
+    url.pathname = AFTER_LOGIN
+    return NextResponse.redirect(url)
+  }
+
+  // Deslogado fora das rotas públicas (incluindo a raiz '/') → login.
   if (!user && !isPublic) {
-    // sem usuário numa rota protegida → manda pro login
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     return NextResponse.redirect(url)
