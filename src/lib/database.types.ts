@@ -30,6 +30,7 @@ export type Database = {
           owner_id: string
           name: string
           description: string | null
+          audio_language: string | null
           created_at: string
           updated_at: string
         }
@@ -38,6 +39,7 @@ export type Database = {
           owner_id?: string
           name: string
           description?: string | null
+          audio_language?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -46,6 +48,7 @@ export type Database = {
           owner_id?: string
           name?: string
           description?: string | null
+          audio_language?: string | null
           created_at?: string
           updated_at?: string
         }

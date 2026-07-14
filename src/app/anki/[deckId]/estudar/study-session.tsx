@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Check, PartyPopper } from 'lucide-react';
+import { Check, PartyPopper, Volume2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,10 +32,12 @@ export function StudySession({
   deckId,
   deckName,
   initialCards,
+  audioLang,
 }: {
   deckId: string;
   deckName: string;
   initialCards: CardRow[];
+  audioLang: string | null;
 }) {
   const [queue, setQueue] = useState(initialCards);
   const [revealed, setRevealed] = useState(false);
@@ -46,8 +48,23 @@ export function StudySession({
   const now = useMemo(() => new Date(), [current]);
   const preview = useMemo(() => (current ? previewRatings(current, now) : null), [current, now]);
 
+  // TTS via Web Speech API (nativo do navegador). Fala o texto no idioma do baralho.
+  const speak = (text: string) => {
+    if (!audioLang || typeof window === 'undefined' || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = audioLang;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleReveal = () => {
+    setRevealed(true);
+    if (current) speak(current.back); // toca na hora (dentro do gesto do clique)
+  };
+
   const handleRate = (rating: ActiveRating) => {
     if (!current || isPending) return;
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
     startTransition(async () => {
       await submitReview(current.id, deckId, rating);
       setQueue((q) => q.slice(1));
@@ -86,14 +103,19 @@ export function StudySession({
           </CardTitle>
         </CardHeader>
         {revealed && (
-          <CardContent className="border-t pt-4 text-center text-base whitespace-pre-wrap text-muted-foreground">
-            {current.back}
+          <CardContent className="flex flex-col items-center gap-3 border-t pt-4 text-center">
+            <p className="text-base whitespace-pre-wrap text-muted-foreground">{current.back}</p>
+            {audioLang && (
+              <Button variant="outline" size="sm" onClick={() => speak(current.back)}>
+                <Volume2 /> Ouvir
+              </Button>
+            )}
           </CardContent>
         )}
       </Card>
 
       {!revealed ? (
-        <Button size="lg" onClick={() => setRevealed(true)}>
+        <Button size="lg" onClick={handleReveal}>
           <Check /> Mostrar resposta
         </Button>
       ) : (

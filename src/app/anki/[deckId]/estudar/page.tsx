@@ -18,5 +18,12 @@ export default async function StudyPage({ params }: { params: Promise<{ deckId: 
     .lte('due', new Date().toISOString())
     .order('due', { ascending: true });
 
-  return <StudySession deckId={deckId} deckName={deck.name} initialCards={cards ?? []} />;
+  return (
+    <StudySession
+      deckId={deckId}
+      deckName={deck.name}
+      initialCards={cards ?? []}
+      audioLang={deck.audio_language}
+    />
+  );
 }

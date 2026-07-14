@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, GraduationCap } from 'lucide-react';
+import { ArrowLeft, GraduationCap, Volume2 } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +38,12 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{deck.name}</h1>
             {deck.description && <p className="text-sm text-muted-foreground">{deck.description}</p>}
+            {deck.audio_language && (
+              <Badge variant="secondary" className="mt-1 gap-1">
+                <Volume2 className="size-3" />
+                {deck.audio_language === 'en-US' ? 'Inglês (EUA)' : 'Português (BR)'}
+              </Badge>
+            )}
           </div>
           <div className="flex gap-2">
             <NewCardDialog deckId={deckId} />

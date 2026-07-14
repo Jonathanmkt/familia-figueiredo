@@ -5,12 +5,18 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { applyReview, newCardFsrsFields, type ActiveRating, type CardRow } from '@/lib/anki/fsrs';
 
-export async function createDeck(name: string, description: string) {
+export type AudioLanguage = 'pt-BR' | 'en-US';
+
+export async function createDeck(
+  name: string,
+  description: string,
+  audioLanguage: AudioLanguage | null
+) {
   const supabase = await createClient();
   const { error } = await supabase
     .schema('anki')
     .from('decks')
-    .insert({ name, description: description || null });
+    .insert({ name, description: description || null, audio_language: audioLanguage });
   if (error) throw new Error(error.message);
   revalidatePath('/anki');
 }
