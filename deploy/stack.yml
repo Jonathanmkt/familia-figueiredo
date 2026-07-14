@@ -1,0 +1,41 @@
+# Stack Docker Swarm do Família Figueiredo.
+# Vive na VPS em /opt/familia-figueiredo/stack.yml (o agente da VPS cria via SSH).
+# Deploy: docker stack deploy -c /opt/familia-figueiredo/stack.yml familia-figueiredo \
+#           --with-registry-auth --resolve-image always
+#
+# Segredos/vars de RUNTIME vêm de /opt/familia-figueiredo/.env (env_file) — NÃO do
+# `${VAR}` do compose (que não é resolvido em prod). A service/secret key, se usada,
+# fica SÓ aqui (runtime), nunca como build-arg da imagem.
+version: '3.8'
+
+services:
+  familia-figueiredo:
+    image: ghcr.io/jonathanmkt/familia-figueiredo:latest
+    networks:
+      - Singanet
+    env_file:
+      - /opt/familia-figueiredo/.env
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.familia-figueiredo.rule=Host(`tools.virtuetech.com.br`)
+        - traefik.http.routers.familia-figueiredo.entrypoints=websecure
+        - traefik.http.routers.familia-figueiredo.priority=1
+        - traefik.http.routers.familia-figueiredo.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.familia-figueiredo.service=familia-figueiredo
+        - traefik.http.services.familia-figueiredo.loadbalancer.server.port=3000
+        - traefik.http.services.familia-figueiredo.loadbalancer.passHostHeader=true
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  Singanet:
+    external: true

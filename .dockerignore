@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.github
+npm-debug.log*
+.env
+.env.*
+.mcp.json
+.vscode
+.idea
+*.md
+.claude
+deploy
+Dockerfile
+.dockerignore
