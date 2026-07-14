@@ -38,12 +38,17 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth')
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // Rotas públicas (não exigem login). Adapte por projeto:
+  // - '/' landing, '/auth/*' fluxo de auth, '/dev/*' laboratório (só em dev).
+  const path = request.nextUrl.pathname
+  const isPublic =
+    path === '/' ||
+    path.startsWith('/auth') ||
+    path.startsWith('/login') ||
+    (path.startsWith('/dev') && process.env.NODE_ENV === 'development')
+
+  if (!user && !isPublic) {
+    // sem usuário numa rota protegida → manda pro login
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     return NextResponse.redirect(url)
