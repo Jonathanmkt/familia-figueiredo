@@ -1,0 +1,2 @@
+# Pasta de assets estáticos servidos na raiz (favicon, robots.txt, imagens...).
+# O .gitkeep garante que a pasta exista no repo — o Dockerfile faz COPY dela.
