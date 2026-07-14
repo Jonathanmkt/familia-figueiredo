@@ -1,8 +1,11 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { BookOpen } from 'lucide-react';
 
 import { LogoutButton } from '@/components/logout-button';
 import { createClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default async function ProtectedPage() {
@@ -60,6 +63,12 @@ export default async function ProtectedPage() {
               </div>
             </div>
           )}
+
+          <Button asChild variant="brand">
+            <Link href="/anki">
+              <BookOpen /> Ir para o Anki
+            </Link>
+          </Button>
 
           <LogoutButton />
         </CardContent>

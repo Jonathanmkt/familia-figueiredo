@@ -12,6 +12,171 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  // ⚠️ Bloco escrito à mão (não gerado): o schema `anki` ainda não está em
+  // "Exposed schemas" no dashboard (Project Settings > Data API), então
+  // `generate_typescript_types` não o inclui. Depois de expor, regere e
+  // substitua este bloco pelo oficial (deve ficar idêntico).
+  anki: {
+    Tables: {
+      decks: {
+        Row: {
+          id: string
+          owner_id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id?: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cards: {
+        Row: {
+          id: string
+          deck_id: string
+          owner_id: string
+          front: string
+          back: string
+          state: number
+          due: string
+          stability: number
+          difficulty: number
+          elapsed_days: number
+          scheduled_days: number
+          reps: number
+          lapses: number
+          learning_steps: number
+          last_review: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          deck_id: string
+          owner_id?: string
+          front: string
+          back: string
+          state?: number
+          due?: string
+          stability?: number
+          difficulty?: number
+          elapsed_days?: number
+          scheduled_days?: number
+          reps?: number
+          lapses?: number
+          learning_steps?: number
+          last_review?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          deck_id?: string
+          owner_id?: string
+          front?: string
+          back?: string
+          state?: number
+          due?: string
+          stability?: number
+          difficulty?: number
+          elapsed_days?: number
+          scheduled_days?: number
+          reps?: number
+          lapses?: number
+          learning_steps?: number
+          last_review?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cards_deck_id_fkey"
+            columns: ["deck_id"]
+            isOneToOne: false
+            referencedRelation: "decks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_log: {
+        Row: {
+          id: string
+          card_id: string
+          owner_id: string
+          rating: number
+          state: number
+          due: string
+          stability: number
+          difficulty: number
+          elapsed_days: number
+          scheduled_days: number
+          reviewed_at: string
+        }
+        Insert: {
+          id?: string
+          card_id: string
+          owner_id?: string
+          rating: number
+          state: number
+          due: string
+          stability: number
+          difficulty: number
+          elapsed_days: number
+          scheduled_days: number
+          reviewed_at?: string
+        }
+        Update: {
+          id?: string
+          card_id?: string
+          owner_id?: string
+          rating?: number
+          state?: number
+          due?: string
+          stability?: number
+          difficulty?: number
+          elapsed_days?: number
+          scheduled_days?: number
+          reviewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_log_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       profiles: {
