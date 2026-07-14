@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Check, PartyPopper, Volume2 } from 'lucide-react';
 
@@ -57,10 +57,12 @@ export function StudySession({
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleReveal = () => {
-    setRevealed(true);
-    if (current) speak(current.back); // toca na hora (dentro do gesto do clique)
-  };
+  // Toca a frente (idioma-alvo) automaticamente quando um novo cartão aparece.
+  // O 1º cartão pode ser barrado pela política de autoplay; o botão "Ouvir" cobre isso.
+  useEffect(() => {
+    if (current) speak(current.front);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- speak é estável; só re-tocar ao trocar de cartão
+  }, [current]);
 
   const handleRate = (rating: ActiveRating) => {
     if (!current || isPending) return;
@@ -97,25 +99,25 @@ export function StudySession({
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-col items-center gap-3">
           <CardTitle className="text-center text-lg leading-relaxed whitespace-pre-wrap">
             {current.front}
           </CardTitle>
+          {audioLang && (
+            <Button variant="outline" size="sm" onClick={() => speak(current.front)}>
+              <Volume2 /> Ouvir
+            </Button>
+          )}
         </CardHeader>
         {revealed && (
-          <CardContent className="flex flex-col items-center gap-3 border-t pt-4 text-center">
-            <p className="text-base whitespace-pre-wrap text-muted-foreground">{current.back}</p>
-            {audioLang && (
-              <Button variant="outline" size="sm" onClick={() => speak(current.back)}>
-                <Volume2 /> Ouvir
-              </Button>
-            )}
+          <CardContent className="border-t pt-4 text-center text-base whitespace-pre-wrap text-muted-foreground">
+            {current.back}
           </CardContent>
         )}
       </Card>
 
       {!revealed ? (
-        <Button size="lg" onClick={handleReveal}>
+        <Button size="lg" onClick={() => setRevealed(true)}>
           <Check /> Mostrar resposta
         </Button>
       ) : (
