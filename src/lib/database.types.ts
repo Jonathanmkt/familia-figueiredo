@@ -12,10 +12,16 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  // ⚠️ Bloco escrito à mão (não gerado): o schema `anki` ainda não está em
-  // "Exposed schemas" no dashboard (Project Settings > Data API), então
-  // `generate_typescript_types` não o inclui. Depois de expor, regere e
-  // substitua este bloco pelo oficial (deve ficar idêntico).
+  // ⚠️ Bloco escrito à mão (não gerado). O schema `anki` já está exposto e
+  // FUNCIONANDO na Data API real (confirmado via REST: GET .../rest/v1/decks
+  // com header Accept-Profile: anki → 200), via override de role aplicado por
+  // SQL (`alter role authenticator set pgrst.db_schemas = 'public, anki'` +
+  // `notify pgrst, 'reload schema'`). Só a GERAÇÃO de tipos (`generate_typescript_types`)
+  // ainda não o inclui, porque ela lê da config "Exposed schemas" do dashboard
+  // (Project Settings > Data API), que é um armazenamento separado do override
+  // de role e não é alcançável por SQL/MCP. Puramente cosmético: marque o
+  // schema no dashboard quando quiser, regere e substitua este bloco (deve
+  // ficar idêntico ao que já está aqui).
   anki: {
     Tables: {
       decks: {
