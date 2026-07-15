@@ -140,7 +140,9 @@ export async function traduzirNoContexto(
             `Você ajuda estudantes de idiomas. O texto está em ${sourceName}. ` +
             `Traduza a expressão indicada para ${targetName} CONSIDERANDO o sentido dela no parágrafo ` +
             `(não a tradução literal isolada) e dê uma explicação curta (1-2 frases, em português do Brasil) ` +
-            `do uso/nuance nesse contexto. Responda APENAS em JSON: {"traducao": "...", "explicacao": "..."}`,
+            `do uso/nuance nesse contexto. Na explicação, ao citar a expressão, cite-a SEMPRE no idioma ` +
+            `original (${sourceName}), entre aspas simples — nunca cite a tradução, que já aparece à parte. ` +
+            `Responda APENAS em JSON: {"traducao": "...", "explicacao": "..."}`,
         },
         {
           role: 'user',

@@ -1,11 +1,7 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { BookMarked, BookOpen, Library } from 'lucide-react';
 
-import { LogoutButton } from '@/components/logout-button';
 import { createClient } from '@/lib/supabase/server';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default async function ProtectedPage() {
@@ -29,7 +25,7 @@ export default async function ProtectedPage() {
   const roles = (profile?.roles as string[] | null) ?? [];
 
   return (
-    <main className="flex min-h-svh w-full flex-col items-center justify-center gap-6 p-6">
+    <main className="flex w-full flex-1 flex-col items-center justify-center gap-6 p-6">
       <div className="flex items-center gap-2.5">
         <span className="flex size-9 items-center justify-center rounded-lg bg-brand text-lg font-bold text-brand-foreground">
           F
@@ -64,25 +60,9 @@ export default async function ProtectedPage() {
             </div>
           )}
 
-          <div className="flex flex-col gap-2">
-            <Button asChild variant="brand">
-              <Link href="/anki">
-                <BookOpen /> Anki
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/leitor">
-                <Library /> Leitor
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/palavras">
-                <BookMarked /> Banco de Palavras
-              </Link>
-            </Button>
-          </div>
-
-          <LogoutButton />
+          <p className="text-sm text-muted-foreground">
+            Use o menu lateral para navegar entre os módulos.
+          </p>
         </CardContent>
       </Card>
     </main>

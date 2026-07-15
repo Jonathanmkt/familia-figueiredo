@@ -27,7 +27,7 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
   const dueCount = cards?.filter((c) => c.due <= nowIso).length ?? 0;
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-6 p-6">
+    <main className="mx-auto flex w-full flex-1 max-w-3xl flex-col gap-6 p-6">
       <div className="flex flex-col gap-2">
         <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
           <Link href="/anki">

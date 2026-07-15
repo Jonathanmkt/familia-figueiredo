@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   caretFromPoint,
   countWords,
@@ -76,6 +78,7 @@ export function Reader({
   const [panel, setPanel] = useState<TranslationPanel>({ loading: null });
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
+  const isMobile = useIsMobile();
 
   const speak = useCallback(
     (text: string, rate = 1) => {
@@ -352,7 +355,7 @@ export function Reader({
   };
 
   return (
-    <main className="mx-auto flex h-svh w-full max-w-4xl flex-col p-4">
+    <main className="mx-auto flex h-full w-full max-w-4xl flex-col p-4">
       <header className="flex items-center justify-between gap-3 pb-3">
         <Button asChild variant="ghost" size="sm">
           <Link href="/leitor">
@@ -366,29 +369,34 @@ export function Reader({
       </header>
 
       <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden rounded-lg border">
-        {/* Botões de virar página (desktop) */}
+        {/* Virar página — alvo de toque maior e mais visível no mobile */}
         <button
           type="button"
           aria-label="Página anterior"
           onClick={() => void viewRef.current?.goLeft()}
-          className="absolute top-1/2 left-1 z-10 -translate-y-1/2 rounded-full p-1.5 text-muted-foreground/50 transition-colors hover:bg-accent hover:text-foreground"
+          className="absolute top-1/2 left-1 z-10 -translate-y-1/2 rounded-full bg-accent/40 p-2.5 text-foreground/70 transition-colors hover:bg-accent hover:text-foreground md:bg-transparent md:p-1.5 md:text-muted-foreground/50"
         >
-          <ChevronLeft className="size-5" />
+          <ChevronLeft className="size-6 md:size-5" />
         </button>
         <button
           type="button"
           aria-label="Próxima página"
           onClick={() => void viewRef.current?.goRight()}
-          className="absolute top-1/2 right-1 z-10 -translate-y-1/2 rounded-full p-1.5 text-muted-foreground/50 transition-colors hover:bg-accent hover:text-foreground"
+          className="absolute top-1/2 right-1 z-10 -translate-y-1/2 rounded-full bg-accent/40 p-2.5 text-foreground/70 transition-colors hover:bg-accent hover:text-foreground md:bg-transparent md:p-1.5 md:text-muted-foreground/50"
         >
-          <ChevronRight className="size-5" />
+          <ChevronRight className="size-6 md:size-5" />
         </button>
 
-        {/* Menu de contexto da seleção */}
+        {/* Menu de contexto da seleção — flutuante no desktop, painel ancorado embaixo no mobile */}
         {sel && (
           <div
-            className="absolute z-20 w-[300px] -translate-x-1/2 rounded-lg border bg-popover p-2 text-popover-foreground shadow-md"
-            style={{ left: sel.pos.left, top: Math.min(sel.pos.top, 9999) }}
+            className={cn(
+              'z-30 rounded-lg border bg-popover p-2 text-popover-foreground shadow-md',
+              isMobile
+                ? 'fixed inset-x-3 bottom-3'
+                : 'absolute w-[300px] -translate-x-1/2'
+            )}
+            style={isMobile ? undefined : { left: sel.pos.left, top: Math.min(sel.pos.top, 9999) }}
             onMouseDown={(e) => e.preventDefault()}
           >
             <div className="flex items-center justify-between gap-2 pb-1.5">

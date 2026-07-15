@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export const ReaderClient = dynamic(() => import('./reader').then((m) => m.Reader), {
   ssr: false,
   loading: () => (
-    <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-4 p-6">
+    <main className="mx-auto flex w-full flex-1 max-w-3xl flex-col gap-4 p-6">
       <Skeleton className="h-10 w-full" />
       <Skeleton className="min-h-[70svh] w-full" />
     </main>

@@ -304,6 +304,13 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
+/* O sidebar também é vidro nos presets glass (o --sidebar já é translúcido). */
+[data-theme='navy-glass'] [data-slot='sidebar-inner'],
+[data-theme='glass-brasao'] [data-slot='sidebar-inner'] {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
 /* Utilitário de superfície "vidro" para containers manuais (adapta-se ao fundo). */
 .surface-glass {
   background: color-mix(in oklch, var(--foreground) 6%, transparent);

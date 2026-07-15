@@ -77,7 +77,7 @@ export function StudySession({
 
   if (!current) {
     return (
-      <main className="mx-auto flex min-h-svh w-full max-w-md flex-col items-center justify-center gap-4 p-6 text-center">
+      <main className="mx-auto flex w-full flex-1 max-w-md flex-col items-center justify-center gap-4 p-6 text-center">
         <PartyPopper className="size-10 text-brand" />
         <h1 className="text-xl font-bold">Sessão concluída!</h1>
         <p className="text-sm text-muted-foreground">
@@ -91,7 +91,7 @@ export function StudySession({
   }
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-center gap-6 p-6">
+    <main className="mx-auto flex w-full flex-1 max-w-md flex-col justify-center gap-6 p-6">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>{deckName}</span>
         <Badge variant="secondary">
