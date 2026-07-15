@@ -49,11 +49,12 @@ export function StudySession({
   const preview = useMemo(() => (current ? previewRatings(current, now) : null), [current, now]);
 
   // TTS via Web Speech API (nativo do navegador). Fala o texto no idioma do baralho.
-  const speak = (text: string) => {
+  const speak = (text: string, rate = 1) => {
     if (!audioLang || typeof window === 'undefined' || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = audioLang;
+    utterance.rate = rate; // 1 = normal, 0.6 = lento (tartaruga)
     window.speechSynthesis.speak(utterance);
   };
 
@@ -104,9 +105,26 @@ export function StudySession({
             {current.front}
           </CardTitle>
           {audioLang && (
-            <Button variant="outline" size="sm" onClick={() => speak(current.front)}>
-              <Volume2 /> Ouvir
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => speak(current.front)}
+                aria-label="Ouvir em velocidade normal"
+                title="Ouvir em velocidade normal"
+              >
+                <Volume2 /> Normal
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => speak(current.front, 0.7)}
+                aria-label="Ouvir devagar"
+                title="Ouvir devagar"
+              >
+                <Volume2 /> Lento
+              </Button>
+            </div>
           )}
         </CardHeader>
         {revealed && (

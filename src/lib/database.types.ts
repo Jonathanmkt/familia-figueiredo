@@ -186,6 +186,177 @@ export type Database = {
       [_ in never]: never
     }
   }
+  // ⚠️ Bloco escrito à mão (não gerado), como o `anki` acima — mesmo motivo.
+  leitor: {
+    Tables: {
+      books: {
+        Row: {
+          id: string
+          title: string
+          author: string | null
+          language: string
+          storage_path: string
+          cover_path: string | null
+          uploaded_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          author?: string | null
+          language: string
+          storage_path: string
+          cover_path?: string | null
+          uploaded_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          author?: string | null
+          language?: string
+          storage_path?: string
+          cover_path?: string | null
+          uploaded_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reading_progress: {
+        Row: {
+          id: string
+          book_id: string
+          user_id: string
+          location_cfi: string | null
+          fraction: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          book_id: string
+          user_id?: string
+          location_cfi?: string | null
+          fraction?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          book_id?: string
+          user_id?: string
+          location_cfi?: string | null
+          fraction?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_progress_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      word_bank: {
+        Row: {
+          id: string
+          user_id: string
+          book_id: string | null
+          source_type: string
+          selected_text: string
+          paragraph_context: string | null
+          translation_common: string | null
+          translation_contextual: string | null
+          context_explanation: string | null
+          location_cfi: string | null
+          language: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          book_id?: string | null
+          source_type?: string
+          selected_text: string
+          paragraph_context?: string | null
+          translation_common?: string | null
+          translation_contextual?: string | null
+          context_explanation?: string | null
+          location_cfi?: string | null
+          language: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          book_id?: string | null
+          source_type?: string
+          selected_text?: string
+          paragraph_context?: string | null
+          translation_common?: string | null
+          translation_contextual?: string | null
+          context_explanation?: string | null
+          location_cfi?: string | null
+          language?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "word_bank_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      translation_cache: {
+        Row: {
+          id: string
+          source_text: string
+          source_lang: string
+          target_lang: string
+          translated_text: string
+          provider: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          source_text: string
+          source_lang: string
+          target_lang: string
+          translated_text: string
+          provider?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          source_text?: string
+          source_lang?: string
+          target_lang?: string
+          translated_text?: string
+          provider?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       profiles: {
