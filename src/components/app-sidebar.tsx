@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, Home, Library, LogOut, Vault } from 'lucide-react';
+import { BookOpen, Home, Library, LogOut, Music, Vault } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -23,6 +23,7 @@ const MODULES = [
   { title: 'Anki', href: '/anki', icon: BookOpen, exact: false },
   { title: 'Leitor', href: '/leitor', icon: Library, exact: false },
   { title: 'Banco de Palavras', href: '/palavras', icon: Vault, exact: false },
+  { title: 'Música', href: '/musica', icon: Music, exact: false },
 ];
 
 export function AppSidebar({ email }: { email: string | null }) {

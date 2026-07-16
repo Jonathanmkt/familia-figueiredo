@@ -148,8 +148,17 @@ Ao selecionar, abre um menu com:
   (com traduções salvas). Depende de **DR-1, DR-3, DR-4**.
 - **Fase 2 — Cards por IA:** na tela do banco, IA gera cards (original + tradução pt-BR) → botão
   envia a lista ao **baralho selecionado** (via UI). Associação livro↔baralho.
-- **Fase 3 — PDF → EPUB:** upload de PDF convertido no servidor. Depende de **DR-2**.
-- **Fase 4 — Música:** letras em inglês → marcar → banco → cards. Depende de **DR-5**.
+- **Fase 3 — PDF → EPUB:** ✅ **implementada** (2026-07-15). Upload aceita PDF de **texto real** (rejeita
+  escaneado/imagem e > 25 MB); `converterPdf` valida com `pdftotext`, converte com **Calibre**
+  (`ebook-convert`) no container do app, sobe o EPUB e cria o livro. **Dockerfile migrado p/ Debian
+  bookworm-slim + `calibre`/`poppler-utils`** (imagem fica bem maior). ⚠️ Só roda no container (Docker);
+  em dev local Windows a conversão falha se não houver Calibre/poppler no PATH. Sem OCR por opção.
+- **Fase 4 — Música:** ✅ **implementada** (2026-07-15). Módulo `/musica`: busca no **LRCLIB** (grátis,
+  sem chave — DR-5, uso familiar), lista faixas com letra, mostra a letra e permite **selecionar
+  palavras/expressões** → menu (copiar, ouvir, traduzir, traduzir no contexto, salvar). Salva no
+  `word_bank` com `source_type='song'` → segue pelo mesmo fluxo banco → IA → Anki. ⚠️ LRCLIB é zona
+  cinzenta jurídica: ok pra uso **privado/familiar**, **não** pra produto comercial (aí precisa
+  LyricFind/Musixmatch licenciado).
 
 ---
 

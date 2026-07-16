@@ -1,0 +1,53 @@
+# Stalwart Mail Server — stack do Docker Swarm (PoC)
+# Destino na VPS (padrão da casa): /opt/stalwart/stack.yml
+# Deploy: docker stack deploy -c /opt/stalwart/stack.yml stalwart --with-registry-auth --resolve-image always
+#
+# ⚠️ RASCUNHO — revisar com o agente da VPS antes do deploy. Pontos a confirmar:
+#   - Nome da rede externa do Traefik: "Singanet" (confirmar caixa/nome exato).
+#   - Nome do entrypoint HTTPS do Traefik: "websecure" (confirmar; o de HTTP-01 é "web").
+#   - Nome do certresolver: "letsencryptresolver" (confirmado pelo agente).
+#   - Portas de e-mail livres no host: 25/587/465/143/993/4190 (confirmado: livres).
+
+version: "3.8"
+
+services:
+  stalwart:
+    image: ghcr.io/stalwartlabs/stalwart:v0.16   # fixado na série v0.16 (atual 0.16.13)
+    networks:
+      - Singanet                                 # overlay do Traefik (rota do painel)
+    volumes:
+      - stalwart-etc:/etc/stalwart               # config
+      - stalwart-data:/var/lib/stalwart          # dados + CHAVES DKIM (backup!)
+    env_file:
+      - /opt/stalwart/.env                        # segredos em runtime (padrão da casa)
+    ports:
+      # Portas de e-mail publicadas DIRETO NO HOST — Traefik NÃO roteia SMTP/IMAP.
+      - { target: 25,   published: 25,   protocol: tcp, mode: host }  # SMTP (recebimento)
+      - { target: 587,  published: 587,  protocol: tcp, mode: host }  # submission (STARTTLS)
+      - { target: 465,  published: 465,  protocol: tcp, mode: host }  # submission (TLS implícito)
+      - { target: 143,  published: 143,  protocol: tcp, mode: host }  # IMAP (STARTTLS)
+      - { target: 993,  published: 993,  protocol: tcp, mode: host }  # IMAPS
+      - { target: 4190, published: 4190, protocol: tcp, mode: host }  # ManageSieve
+      # 443/8080 NÃO publicados no host (443 é do Traefik) — painel vai via Traefik (labels abaixo).
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager                  # single-node: manager/leader
+      restart_policy:
+        condition: any
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=Singanet
+        - traefik.http.routers.stalwart-admin.rule=Host(`mail-admin.virtuetech.com.br`)
+        - traefik.http.routers.stalwart-admin.entrypoints=websecure
+        - traefik.http.routers.stalwart-admin.tls.certresolver=letsencryptresolver
+        - traefik.http.services.stalwart-admin.loadbalancer.server.port=8080
+
+networks:
+  Singanet:
+    external: true
+
+volumes:
+  stalwart-etc:
+  stalwart-data:

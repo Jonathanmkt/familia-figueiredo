@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Home, Library, Vault } from 'lucide-react';
+import { BookOpen, Home, Library, Music, Vault } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { isImmersiveRoute } from '@/lib/mobile';
@@ -12,6 +12,7 @@ const ITEMS = [
   { title: 'Anki', href: '/anki', icon: BookOpen, exact: false },
   { title: 'Leitor', href: '/leitor', icon: Library, exact: false },
   { title: 'Palavras', href: '/palavras', icon: Vault, exact: false },
+  { title: 'Música', href: '/musica', icon: Music, exact: false },
 ];
 
 /**

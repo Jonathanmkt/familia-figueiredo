@@ -18,7 +18,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { createBook, type BookLanguage } from './actions';
+import { converterPdf, createBook, type BookLanguage } from './actions';
+import { MAX_PDF_MB } from './constants';
 
 export function UploadBookDialog() {
   const [open, setOpen] = useState(false);
@@ -29,10 +30,21 @@ export function UploadBookDialog() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const isPdf = !!file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name));
+
   const handleFile = (f: File | null) => {
     setFile(f);
+    setError(null);
     // Sugere o título a partir do nome do arquivo (o usuário pode editar)
-    if (f && !title.trim()) setTitle(f.name.replace(/\.epub$/i, '').replace(/[-_]+/g, ' '));
+    if (f && !title.trim()) setTitle(f.name.replace(/\.(epub|pdf)$/i, '').replace(/[-_]+/g, ' '));
+  };
+
+  const reset = () => {
+    setFile(null);
+    setTitle('');
+    setAuthor('');
+    setLanguage('en-US');
+    setOpen(false);
   };
 
   const handleUpload = () => {
@@ -41,19 +53,30 @@ export function UploadBookDialog() {
     startTransition(async () => {
       try {
         const supabase = createClient();
-        const storagePath = `${crypto.randomUUID()}.epub`;
-        const { error: uploadError } = await supabase.storage
-          .from('books')
-          .upload(storagePath, file, { contentType: 'application/epub+zip' });
-        if (uploadError) throw new Error(uploadError.message);
 
-        await createBook({ title: title.trim(), author: author.trim(), language, storagePath });
+        if (isPdf) {
+          if (file.size > MAX_PDF_MB * 1024 * 1024) {
+            throw new Error(`PDF muito grande (máx. ${MAX_PDF_MB} MB).`);
+          }
+          // Sobe pra um caminho temporário; o servidor converte e apaga o PDF depois.
+          const pdfPath = `tmp/${crypto.randomUUID()}.pdf`;
+          const { error: upErr } = await supabase.storage
+            .from('books')
+            .upload(pdfPath, file, { contentType: 'application/pdf' });
+          if (upErr) throw new Error(upErr.message);
 
-        setFile(null);
-        setTitle('');
-        setAuthor('');
-        setLanguage('en-US');
-        setOpen(false);
+          await converterPdf({ pdfPath, title: title.trim(), author: author.trim(), language });
+        } else {
+          const storagePath = `${crypto.randomUUID()}.epub`;
+          const { error: upErr } = await supabase.storage
+            .from('books')
+            .upload(storagePath, file, { contentType: 'application/epub+zip' });
+          if (upErr) throw new Error(upErr.message);
+
+          await createBook({ title: title.trim(), author: author.trim(), language, storagePath });
+        }
+
+        reset();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Falha no upload.');
       }
@@ -71,18 +94,21 @@ export function UploadBookDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar livro</DialogTitle>
           <DialogDescription>
-            Envie um arquivo EPUB para a biblioteca da família.
+            Envie um EPUB ou um PDF de texto para a biblioteca da família.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="book-file">Arquivo EPUB</Label>
+            <Label htmlFor="book-file">Arquivo (EPUB ou PDF)</Label>
             <Input
               id="book-file"
               type="file"
-              accept=".epub,application/epub+zip"
+              accept=".epub,.pdf,application/epub+zip,application/pdf"
               onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
             />
+            <p className="text-xs text-muted-foreground">
+              PDF deve ser de texto real (não escaneado), até {MAX_PDF_MB} MB — será convertido para EPUB.
+            </p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="book-title">Título</Label>
@@ -123,7 +149,7 @@ export function UploadBookDialog() {
             <Button variant="outline">Cancelar</Button>
           </DialogClose>
           <Button onClick={handleUpload} disabled={isPending || !file || !title.trim()}>
-            {isPending ? 'Enviando...' : 'Adicionar'}
+            {isPending ? (isPdf ? 'Convertendo…' : 'Enviando…') : 'Adicionar'}
           </Button>
         </DialogFooter>
       </DialogContent>

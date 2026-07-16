@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { previewRatings, Rating, type ActiveRating, type CardRow } from '@/lib/anki/fsrs';
+import { RichText, stripMarks } from '@/lib/anki/rich-text';
 import { submitReview } from '../../actions';
 
 const RATING_CONFIG: { rating: ActiveRating; label: string; variant: 'destructive' | 'outline' | 'secondary' | 'brand' }[] = [
@@ -52,7 +53,7 @@ export function StudySession({
   const speak = (text: string, rate = 1) => {
     if (!audioLang || typeof window === 'undefined' || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(stripMarks(text)); // sem os ** do negrito
     utterance.lang = audioLang;
     utterance.rate = rate; // 1 = normal, 0.6 = lento (tartaruga)
     window.speechSynthesis.speak(utterance);
@@ -102,7 +103,7 @@ export function StudySession({
       <Card>
         <CardHeader className="flex flex-col items-center gap-3">
           <CardTitle className="text-center text-lg leading-relaxed whitespace-pre-wrap">
-            {current.front}
+            <RichText text={current.front} />
           </CardTitle>
           {audioLang && (
             <div className="flex gap-2">
@@ -129,7 +130,7 @@ export function StudySession({
         </CardHeader>
         {revealed && (
           <CardContent className="border-t pt-4 text-center text-base whitespace-pre-wrap text-muted-foreground">
-            {current.back}
+            <RichText text={current.back} />
           </CardContent>
         )}
       </Card>

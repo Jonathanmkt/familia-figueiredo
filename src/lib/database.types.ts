@@ -273,6 +273,7 @@ export type Database = {
           context_explanation: string | null
           location_cfi: string | null
           language: string
+          card_id: string | null
           created_at: string
         }
         Insert: {
@@ -287,6 +288,7 @@ export type Database = {
           context_explanation?: string | null
           location_cfi?: string | null
           language: string
+          card_id?: string | null
           created_at?: string
         }
         Update: {
@@ -301,6 +303,7 @@ export type Database = {
           context_explanation?: string | null
           location_cfi?: string | null
           language?: string
+          card_id?: string | null
           created_at?: string
         }
         Relationships: [
@@ -309,6 +312,13 @@ export type Database = {
             columns: ["book_id"]
             isOneToOne: false
             referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "word_bank_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "cards"
             referencedColumns: ["id"]
           },
         ]

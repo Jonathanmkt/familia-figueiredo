@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, GraduationCap, Volume2 } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/server';
+import { RichText } from '@/lib/anki/rich-text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -74,8 +75,12 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
             <Card key={c.id}>
               <CardContent className="flex items-center justify-between gap-4 py-4">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{c.front}</p>
-                  <p className="truncate text-xs text-muted-foreground">{c.back}</p>
+                  <p className="truncate text-sm font-medium">
+                    <RichText text={c.front} />
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    <RichText text={c.back} />
+                  </p>
                 </div>
                 <Badge variant={c.due <= nowIso ? 'warning' : 'secondary'}>
                   {c.due <= nowIso ? 'Pendente' : 'Agendado'}
