@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { Library } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/server';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { UploadBookDialog } from './upload-book-dialog';
@@ -59,9 +58,6 @@ export default async function LeitorPage() {
                     {book.author && <CardDescription>{book.author}</CardDescription>}
                   </CardHeader>
                   <CardContent className="flex flex-col gap-3">
-                    <Badge variant="secondary">
-                      {book.language === 'en-US' ? 'Inglês (EUA)' : 'Português (BR)'}
-                    </Badge>
                     <div className="flex items-center gap-2">
                       <Progress value={fraction * 100} className="h-1.5" />
                       <span className="text-xs tabular-nums text-muted-foreground">

@@ -41,8 +41,7 @@ export default async function DeckPage({ params }: { params: Promise<{ deckId: s
             {deck.description && <p className="text-sm text-muted-foreground">{deck.description}</p>}
             {deck.audio_language && (
               <Badge variant="secondary" className="mt-1 gap-1">
-                <Volume2 className="size-3" />
-                {deck.audio_language === 'en-US' ? 'Inglês (EUA)' : 'Português (BR)'}
+                <Volume2 className="size-3" /> Áudio
               </Badge>
             )}
           </div>

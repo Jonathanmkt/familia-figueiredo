@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogClose,
@@ -18,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { converterPdf, createBook, type BookLanguage } from './actions';
+import { createBook, type BookLanguage } from './actions';
 import { MAX_PDF_MB } from './constants';
 
 export function UploadBookDialog() {
@@ -26,7 +25,7 @@ export function UploadBookDialog() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
-  const [language, setLanguage] = useState<BookLanguage>('en-US');
+  const language: BookLanguage = 'en-US'; // projeto é só inglês
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -43,7 +42,6 @@ export function UploadBookDialog() {
     setFile(null);
     setTitle('');
     setAuthor('');
-    setLanguage('en-US');
     setOpen(false);
   };
 
@@ -58,14 +56,16 @@ export function UploadBookDialog() {
           if (file.size > MAX_PDF_MB * 1024 * 1024) {
             throw new Error(`PDF muito grande (máx. ${MAX_PDF_MB} MB).`);
           }
-          // Sobe pra um caminho temporário; o servidor converte e apaga o PDF depois.
-          const pdfPath = `tmp/${crypto.randomUUID()}.pdf`;
+          // Converte PDF→EPUB no PRÓPRIO navegador (pdfjs + fflate), sobe o EPUB pronto.
+          const { pdfToEpub } = await import('@/lib/leitor/pdf-to-epub');
+          const epub = await pdfToEpub(file, title.trim(), author.trim());
+          const storagePath = `${crypto.randomUUID()}.epub`;
           const { error: upErr } = await supabase.storage
             .from('books')
-            .upload(pdfPath, file, { contentType: 'application/pdf' });
+            .upload(storagePath, epub, { contentType: 'application/epub+zip' });
           if (upErr) throw new Error(upErr.message);
 
-          await converterPdf({ pdfPath, title: title.trim(), author: author.trim(), language });
+          await createBook({ title: title.trim(), author: author.trim(), language, storagePath });
         } else {
           const storagePath = `${crypto.randomUUID()}.epub`;
           const { error: upErr } = await supabase.storage
@@ -117,30 +117,6 @@ export function UploadBookDialog() {
           <div className="grid gap-2">
             <Label htmlFor="book-author">Autor (opcional)</Label>
             <Input id="book-author" value={author} onChange={(e) => setAuthor(e.target.value)} />
-          </div>
-          <div className="grid gap-2">
-            <Label>Idioma do livro</Label>
-            <RadioGroup
-              value={language}
-              onValueChange={(v) => setLanguage(v as BookLanguage)}
-              className="flex gap-4"
-            >
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="en-US" id="book-lang-en" />
-                <Label htmlFor="book-lang-en" className="font-normal">
-                  Inglês (EUA)
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="pt-BR" id="book-lang-pt" />
-                <Label htmlFor="book-lang-pt" className="font-normal">
-                  Português (BR)
-                </Label>
-              </div>
-            </RadioGroup>
-            <p className="text-xs text-muted-foreground">
-              Define o idioma do áudio e a direção das traduções ao marcar palavras.
-            </p>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>

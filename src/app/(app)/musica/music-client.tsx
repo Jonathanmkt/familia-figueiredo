@@ -12,7 +12,7 @@ import {
   type BookLanguage,
   type ContextualTranslation,
 } from '../leitor/actions';
-import { salvarSelecaoMusica, type LyricHit } from './actions';
+import { salvarSelecaoMusica, type Song } from './actions';
 import { SongSearch } from './song-search';
 
 type Sel = { text: string; paragraph: string; pos: { left: number; top: number } };
@@ -24,7 +24,7 @@ type Panel = {
 };
 
 export function MusicClient() {
-  const [track, setTrack] = useState<LyricHit | null>(null);
+  const [track, setTrack] = useState<Song | null>(null);
   const language: BookLanguage = 'en-US'; // música: só inglês
 
   const lyricsRef = useRef<HTMLDivElement>(null);
@@ -113,8 +113,8 @@ export function MusicClient() {
             <ArrowLeft /> Voltar
           </Button>
           <div className="min-w-0">
-            <p className="truncate font-semibold">{track.trackName}</p>
-            <p className="truncate text-xs text-muted-foreground">{track.artistName}</p>
+            <p className="truncate font-semibold">{track.title}</p>
+            <p className="truncate text-xs text-muted-foreground">{track.artist}</p>
           </div>
         </div>
 
@@ -126,7 +126,7 @@ export function MusicClient() {
               onTouchEnd={onSelect}
               className="flex flex-col gap-1 leading-relaxed whitespace-pre-wrap select-text"
             >
-              {track.plainLyrics.split('\n').map((line, i) => (
+              {track.lyrics.split('\n').map((line, i) => (
                 <p key={i} className={line.trim() ? '' : 'h-3'}>
                   {line}
                 </p>
@@ -200,11 +200,11 @@ export function MusicClient() {
     );
   }
 
-  // ── Busca (combobox ao vivo) ──
+  // ── Busca (catálogo local + fallback online) ──
   return (
     <SongSearch
-      onSelect={(hit) => {
-        setTrack(hit);
+      onSelect={(song) => {
+        setTrack(song);
         setSel(null);
       }}
     />

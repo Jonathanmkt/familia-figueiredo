@@ -148,11 +148,12 @@ Ao selecionar, abre um menu com:
   (com traduções salvas). Depende de **DR-1, DR-3, DR-4**.
 - **Fase 2 — Cards por IA:** na tela do banco, IA gera cards (original + tradução pt-BR) → botão
   envia a lista ao **baralho selecionado** (via UI). Associação livro↔baralho.
-- **Fase 3 — PDF → EPUB:** ✅ **implementada** (2026-07-15). Upload aceita PDF de **texto real** (rejeita
-  escaneado/imagem e > 25 MB); `converterPdf` valida com `pdftotext`, converte com **Calibre**
-  (`ebook-convert`) no container do app, sobe o EPUB e cria o livro. **Dockerfile migrado p/ Debian
-  bookworm-slim + `calibre`/`poppler-utils`** (imagem fica bem maior). ⚠️ Só roda no container (Docker);
-  em dev local Windows a conversão falha se não houver Calibre/poppler no PATH. Sem OCR por opção.
+- **Fase 3 — PDF → EPUB:** ✅ **implementada** e depois **reescrita LEVE** (2026-07-15, DR
+  `docs/drs/pdftoedpublight.md`). Upload aceita PDF de **texto real** (rejeita escaneado/imagem
+  e > 25 MB). A conversão roda **100% no navegador** (`src/lib/leitor/pdf-to-epub.ts`): **pdfjs-dist**
+  extrai o texto + heurística de parágrafos/hifenização, **fflate** monta o EPUB, sobe o EPUB pronto.
+  **Sem Calibre, sem servidor** → Dockerfile **de volta ao Alpine** (imagem pequena de novo). pdfjs
+  é importado sob demanda (não pesa o bundle inicial). Sem OCR por opção. ~~Calibre/Debian~~ removido.
 - **Fase 4 — Música:** ✅ **implementada** (2026-07-15). Módulo `/musica`: busca no **LRCLIB** (grátis,
   sem chave — DR-5, uso familiar), lista faixas com letra, mostra a letra e permite **selecionar
   palavras/expressões** → menu (copiar, ouvir, traduzir, traduzir no contexto, salvar). Salva no

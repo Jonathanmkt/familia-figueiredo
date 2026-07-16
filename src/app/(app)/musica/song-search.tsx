@@ -1,26 +1,25 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { Globe, Loader2, Music, Search } from 'lucide-react';
 
+import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { LyricHit } from './actions';
+import { salvarSong, type Song } from './actions';
 
 const MIN_CHARS = 3;
-const DEBOUNCE_MS = 350;
+const DEBOUNCE_MS = 300;
 
-// Cache em memória (por sessão): dedupe de buscas repetidas → menos chamadas ao LRCLIB.
-const searchCache = new Map<string, LyricHit[]>();
+type OnlineHit = { id: number; title: string; artist: string; album: string | null; lyrics: string };
 
-/**
- * Busca no LRCLIB DIRETO do navegador (não pelo servidor): distribui as chamadas pelos IPs
- * residenciais de cada pessoa, evitando o IP único da VPS e a proteção anti-bot. CORS é aberto
- * (`access-control-allow-origin: *`). O navegador manda o próprio User-Agent (aceito pelo LRCLIB).
- */
-async function searchLyrics(q: string): Promise<LyricHit[]> {
+// Cache do "buscar online" (LRCLIB) por sessão.
+const onlineCache = new Map<string, OnlineHit[]>();
+
+/** Busca online no LRCLIB, DIRETO do navegador (só sob demanda, no clique). */
+async function searchOnlineLRCLIB(q: string): Promise<OnlineHit[]> {
   const key = q.toLowerCase();
-  const cached = searchCache.get(key);
+  const cached = onlineCache.get(key);
   if (cached) return cached;
   try {
     const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
@@ -29,59 +28,65 @@ async function searchLyrics(q: string): Promise<LyricHit[]> {
     if (!res.ok) return [];
     const data: unknown = await res.json();
     if (!Array.isArray(data)) return [];
-    const hits: LyricHit[] = (data as Array<Record<string, unknown>>)
+    const hits: OnlineHit[] = (data as Array<Record<string, unknown>>)
       .filter((d) => !d.instrumental && typeof d.plainLyrics === 'string' && d.plainLyrics)
       .slice(0, 20)
       .map((d) => ({
         id: d.id as number,
-        trackName: d.trackName as string,
-        artistName: d.artistName as string,
-        albumName: (d.albumName as string | null) ?? null,
-        plainLyrics: d.plainLyrics as string,
+        title: d.trackName as string,
+        artist: d.artistName as string,
+        album: (d.albumName as string | null) ?? null,
+        lyrics: d.plainLyrics as string,
       }));
-    searchCache.set(key, hits);
+    onlineCache.set(key, hits);
     return hits;
   } catch {
     return [];
   }
 }
 
-/** Combobox de busca ao vivo de letras (LRCLIB), com debounce e navegação por teclado. */
-export function SongSearch({ onSelect }: { onSelect: (hit: LyricHit) => void }) {
+/**
+ * Busca de música: type-ahead no NOSSO catálogo (Supabase, instantâneo, sem tocar o LRCLIB).
+ * Quando não acha (ou quer outra versão), um item "Buscar online" chama o LRCLIB sob demanda
+ * e salva o achado no catálogo (que cresce sozinho).
+ */
+export function SongSearch({ onSelect }: { onSelect: (song: Song) => void }) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<LyricHit[]>([]);
+  const [local, setLocal] = useState<Song[]>([]);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'local' | 'online'>('local');
+  const [online, setOnline] = useState<OnlineHit[] | null>(null);
+  const [loadingOnline, setLoadingOnline] = useState(false);
   const [highlight, setHighlight] = useState(-1);
 
   const rootRef = useRef<HTMLDivElement>(null);
-  const latestQuery = useRef(''); // guard por texto: só aplica a resposta da busca ATUAL
+  const latestQuery = useRef('');
   const listId = useId();
 
-  // Busca com debounce a partir do 3º caractere.
+  // Type-ahead LOCAL (Supabase) com debounce.
   useEffect(() => {
     const q = query.trim();
     latestQuery.current = q;
+    setMode('local');
+    setOnline(null);
     if (q.length < MIN_CHARS) {
-      setResults([]);
+      setLocal([]);
       setOpen(false);
-      setLoading(false);
       return;
     }
-    setLoading(true);
     setOpen(true);
     const t = setTimeout(async () => {
-      try {
-        const hits = await searchLyrics(q);
-        if (latestQuery.current !== q) return; // já não é a busca atual → descarta
-        setResults(hits);
-        setHighlight(hits.length ? 0 : -1);
-      } catch {
-        if (latestQuery.current !== q) return;
-        setResults([]);
-      } finally {
-        if (latestQuery.current === q) setLoading(false);
-      }
+      const supabase = createClient();
+      const { data } = await supabase.schema('leitor').rpc('search_songs', { q });
+      if (latestQuery.current !== q) return;
+      const songs: Song[] = (data ?? []).map((r) => ({
+        title: r.title,
+        artist: r.artist,
+        album: r.album,
+        lyrics: r.plain_lyrics,
+      }));
+      setLocal(songs);
+      setHighlight(songs.length ? 0 : -1);
     }, DEBOUNCE_MS);
     return () => clearTimeout(t);
   }, [query]);
@@ -95,31 +100,64 @@ export function SongSearch({ onSelect }: { onSelect: (hit: LyricHit) => void }) 
     return () => document.removeEventListener('mousedown', onDown);
   }, []);
 
-  const choose = (hit: LyricHit) => {
-    onSelect(hit);
+  const reset = () => {
     setOpen(false);
     setQuery('');
-    setResults([]);
+    setLocal([]);
+    setOnline(null);
+    setMode('local');
     setHighlight(-1);
   };
 
+  const goOnline = async () => {
+    const q = query.trim();
+    if (q.length < MIN_CHARS) return;
+    setMode('online');
+    setLoadingOnline(true);
+    setOnline(null);
+    const hits = await searchOnlineLRCLIB(q);
+    if (latestQuery.current !== q) return;
+    setLoadingOnline(false);
+    setOnline(hits);
+  };
+
+  const chooseLocal = (song: Song) => {
+    onSelect(song);
+    reset();
+  };
+
+  const chooseOnline = (hit: OnlineHit) => {
+    // Alimenta o catálogo (não bloqueia a abertura) e abre a letra.
+    void salvarSong({ lrclibId: hit.id, artist: hit.artist, title: hit.title, album: hit.album, lyrics: hit.lyrics });
+    onSelect({ title: hit.title, artist: hit.artist, album: hit.album, lyrics: hit.lyrics });
+    reset();
+  };
+
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (mode !== 'local') return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (!open && results.length) setOpen(true);
-      setHighlight((h) => (results.length ? (h + 1) % results.length : -1));
+      if (local.length) {
+        setOpen(true);
+        setHighlight((h) => (h + 1) % local.length);
+      }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlight((h) => (results.length ? (h - 1 + results.length) % results.length : -1));
+      if (local.length) setHighlight((h) => (h - 1 + local.length) % local.length);
     } else if (e.key === 'Enter') {
-      if (open && results[highlight]) {
+      if (local[highlight]) {
         e.preventDefault();
-        choose(results[highlight]);
+        chooseLocal(local[highlight]);
+      } else if (query.trim().length >= MIN_CHARS) {
+        e.preventDefault();
+        void goOnline();
       }
     } else if (e.key === 'Escape') {
       setOpen(false);
     }
   };
+
+  const showDropdown = open && query.trim().length >= MIN_CHARS;
 
   return (
     <div ref={rootRef} className="relative">
@@ -129,56 +167,94 @@ export function SongSearch({ onSelect }: { onSelect: (hit: LyricHit) => void }) 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          onFocus={() => results.length > 0 && setOpen(true)}
+          onFocus={() => query.trim().length >= MIN_CHARS && setOpen(true)}
           role="combobox"
-          aria-expanded={open}
+          aria-expanded={showDropdown}
           aria-controls={listId}
           aria-autocomplete="list"
-          aria-activedescendant={open && highlight >= 0 ? `${listId}-opt-${highlight}` : undefined}
-          placeholder="Música e artista (ex.: yesterday beatles)"
-          className="pr-9 pl-9"
+          placeholder="Música e artista (ex.: coldplay yellow)"
+          className="pl-9"
         />
-        {loading && (
-          <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-        )}
       </div>
 
-      {open && query.trim().length >= MIN_CHARS && (
+      {showDropdown && (
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
+          className="absolute z-30 mt-1 max-h-80 w-full overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
         >
-          {loading && results.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-muted-foreground">Buscando…</li>
-          ) : results.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-muted-foreground">
-              Nenhuma letra encontrada. Tente incluir o artista.
-            </li>
-          ) : (
-            results.map((hit, i) => (
+          {mode === 'local' ? (
+            <>
+              {local.map((song, i) => (
+                <li
+                  key={`${song.artist}-${song.title}-${i}`}
+                  role="option"
+                  aria-selected={i === highlight}
+                  onMouseEnter={() => setHighlight(i)}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    chooseLocal(song);
+                  }}
+                  className={cn(
+                    'cursor-pointer rounded-md px-3 py-2',
+                    i === highlight && 'bg-accent text-accent-foreground'
+                  )}
+                >
+                  <p className="truncate text-sm font-medium">{song.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">{song.artist}</p>
+                </li>
+              ))}
+
+              {/* Ação sob demanda: buscar no LRCLIB (não dispara sozinho) */}
               <li
-                key={hit.id}
-                id={`${listId}-opt-${i}`}
                 role="option"
-                aria-selected={i === highlight}
-                onMouseEnter={() => setHighlight(i)}
+                aria-selected={false}
                 onMouseDown={(e) => {
-                  e.preventDefault(); // não deixa o input perder o foco antes do clique
-                  choose(hit);
+                  e.preventDefault();
+                  void goOnline();
                 }}
-                className={cn(
-                  'cursor-pointer rounded-md px-3 py-2',
-                  i === highlight && 'bg-accent text-accent-foreground'
-                )}
+                className="mt-1 flex cursor-pointer items-center gap-2 rounded-md border-t px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               >
-                <p className="truncate text-sm font-medium">{hit.trackName}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {hit.artistName}
-                  {hit.albumName ? ` · ${hit.albumName}` : ''}
-                </p>
+                <Globe className="size-4 shrink-0" />
+                {local.length === 0
+                  ? `Não está no catálogo — buscar “${query.trim()}” online`
+                  : `Não achou? Buscar “${query.trim()}” online`}
               </li>
-            ))
+            </>
+          ) : (
+            <>
+              <li className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                Resultados online (LRCLIB)
+              </li>
+              {loadingOnline ? (
+                <li className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" /> Buscando online…
+                </li>
+              ) : (online?.length ?? 0) === 0 ? (
+                <li className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                  <Music className="size-4" /> Nada encontrado online.
+                </li>
+              ) : (
+                online?.map((hit) => (
+                  <li
+                    key={hit.id}
+                    role="option"
+                    aria-selected={false}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      chooseOnline(hit);
+                    }}
+                    className="cursor-pointer rounded-md px-3 py-2 hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <p className="truncate text-sm font-medium">{hit.title}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {hit.artist}
+                      {hit.album ? ` · ${hit.album}` : ''}
+                    </p>
+                  </li>
+                ))
+              )}
+            </>
           )}
         </ul>
       )}

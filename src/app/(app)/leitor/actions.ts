@@ -1,21 +1,10 @@
 'use server';
 
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/lib/supabase/server';
-import { MAX_PDF_MB } from './constants';
-
-const run = promisify(execFile);
 
 export type BookLanguage = 'en-US' | 'pt-BR';
-
-/** Abaixo deste total de caracteres (nas 1ªs páginas), tratamos como escaneado/imagem. */
-const MIN_TEXT_CHARS = 300;
 
 /** Registra o livro após o upload do EPUB pro Storage (feito no client). */
 export async function createBook(input: {
@@ -33,90 +22,6 @@ export async function createBook(input: {
   });
   if (error) throw new Error(error.message);
   revalidatePath('/leitor');
-}
-
-/**
- * Converte um PDF (de texto real) já enviado para um caminho temporário no Storage:
- * baixa → valida que tem texto (pdftotext) → `ebook-convert` (Calibre) → sobe o EPUB →
- * cria o livro. Roda no container do app (tem os binários). PDFs escaneados são rejeitados.
- */
-export async function converterPdf(input: {
-  pdfPath: string;
-  title: string;
-  author: string;
-  language: BookLanguage;
-}) {
-  const supabase = await createClient();
-
-  const { data: blob, error: dlErr } = await supabase.storage.from('books').download(input.pdfPath);
-  if (dlErr || !blob) throw new Error('Não foi possível ler o PDF enviado.');
-  const buf = Buffer.from(await blob.arrayBuffer());
-  if (buf.length > MAX_PDF_MB * 1024 * 1024) {
-    await supabase.storage.from('books').remove([input.pdfPath]).catch(() => {});
-    throw new Error(`PDF muito grande (máx. ${MAX_PDF_MB} MB).`);
-  }
-
-  const dir = await mkdtemp(join(tmpdir(), 'pdf2epub-'));
-  const pdfFile = join(dir, 'in.pdf');
-  const epubFile = join(dir, 'out.epub');
-  const cleanup = async () => {
-    await rm(dir, { recursive: true, force: true }).catch(() => {});
-    await supabase.storage.from('books').remove([input.pdfPath]).catch(() => {});
-  };
-
-  try {
-    await writeFile(pdfFile, buf);
-
-    // Valida: é PDF de texto real? (pdftotext nas primeiras páginas)
-    let texto = '';
-    try {
-      const { stdout } = await run('pdftotext', ['-l', '5', pdfFile, '-'], { maxBuffer: 1024 * 1024 * 16 });
-      texto = stdout;
-    } catch (e) {
-      if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
-        throw new Error('Conversor indisponível no servidor (poppler ausente).');
-      }
-      throw new Error('Não foi possível analisar o PDF. Envie um PDF de texto (não escaneado).');
-    }
-    if (texto.replace(/\s/g, '').length < MIN_TEXT_CHARS) {
-      throw new Error(
-        'Este PDF parece ser escaneado (imagem, sem texto). Por ora aceitamos apenas PDFs de texto real.'
-      );
-    }
-
-    // Converte com Calibre (heurísticas para desembrulhar linhas/parágrafos).
-    try {
-      await run('ebook-convert', [pdfFile, epubFile, '--enable-heuristics', '--unwrap-lines'], {
-        timeout: 120_000,
-        maxBuffer: 1024 * 1024 * 16,
-      });
-    } catch (e) {
-      if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
-        throw new Error('Conversor indisponível no servidor (Calibre ausente).');
-      }
-      throw new Error('Falha ao converter o PDF para EPUB.');
-    }
-
-    // Sobe o EPUB e cria o livro.
-    const epub = await readFile(epubFile);
-    const storagePath = `${crypto.randomUUID()}.epub`;
-    const { error: upErr } = await supabase.storage
-      .from('books')
-      .upload(storagePath, epub, { contentType: 'application/epub+zip' });
-    if (upErr) throw new Error(upErr.message);
-
-    const { error: insErr } = await supabase.schema('leitor').from('books').insert({
-      title: input.title,
-      author: input.author || null,
-      language: input.language,
-      storage_path: storagePath,
-    });
-    if (insErr) throw new Error(insErr.message);
-
-    revalidatePath('/leitor');
-  } finally {
-    await cleanup();
-  }
 }
 
 export async function deleteBook(bookId: string, storagePath: string) {

@@ -11,6 +11,7 @@ import {
   Copy,
   Languages,
   Sparkles,
+  Square,
   Volume2,
   X,
 } from 'lucide-react';
@@ -91,6 +92,47 @@ export function Reader({
     },
     [language]
   );
+
+  // Lê em voz alta TODO o texto da página (coluna) visível no momento.
+  const [speakingPage, setSpeakingPage] = useState(false);
+  const togglePageAudio = useCallback(() => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (speakingPage) {
+      window.speechSynthesis.cancel();
+      setSpeakingPage(false);
+      return;
+    }
+    const doc = viewRef.current?.renderer?.getContents?.()[0]?.doc;
+    const win = doc?.defaultView;
+    if (!doc || !win) return;
+    const vw = win.innerWidth;
+    const vh = win.innerHeight;
+
+    // Coleta os text nodes cujo retângulo cai dentro do viewport da página atual.
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+    const parts: string[] = [];
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent ?? '';
+      if (!text.trim()) continue;
+      const range = doc.createRange();
+      range.selectNodeContents(node);
+      const r = range.getBoundingClientRect();
+      if (r.right > 0 && r.left < vw && r.bottom > 0 && r.top < vh) parts.push(text.trim());
+    }
+    const full = parts.join(' ').replace(/\s+/g, ' ').trim();
+    if (!full) return;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(full);
+    utterance.lang = language;
+    utterance.onend = () => setSpeakingPage(false);
+    utterance.onerror = () => setSpeakingPage(false);
+    window.speechSynthesis.speak(utterance);
+    setSpeakingPage(true);
+  }, [language, speakingPage]);
+
+  // Para o áudio ao sair do leitor.
+  useEffect(() => () => window.speechSynthesis?.cancel(), []);
 
   /** Posiciona e abre o menu para um range dentro do iframe de um capítulo. */
   const showMenuFor = useCallback((range: Range, doc: Document, index: number) => {
@@ -363,9 +405,21 @@ export function Reader({
           </Link>
         </Button>
         <span className="min-w-0 flex-1 truncate text-center text-sm font-medium">{title}</span>
-        <span className="w-24 text-right text-xs tabular-nums text-muted-foreground">
-          {Math.round(fraction * 100)}%
-        </span>
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {Math.round(fraction * 100)}%
+          </span>
+          <Button
+            variant={speakingPage ? 'brand' : 'outline'}
+            size="icon"
+            className="size-8 shrink-0"
+            onClick={togglePageAudio}
+            aria-label={speakingPage ? 'Parar áudio' : 'Ouvir esta página'}
+            title={speakingPage ? 'Parar' : 'Ouvir esta página'}
+          >
+            {speakingPage ? <Square /> : <Volume2 />}
+          </Button>
+        </div>
       </header>
 
       <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden rounded-lg border">

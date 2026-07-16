@@ -205,9 +205,6 @@ function WordCard({
         )}
 
         <div className="flex flex-wrap items-center gap-2 pl-6">
-          <Badge variant="secondary">
-            {item.language === 'en-US' ? 'Inglês (EUA)' : 'Português (BR)'}
-          </Badge>
           {item.bookTitle && <Badge variant="outline">{item.bookTitle}</Badge>}
           <span className="text-xs text-muted-foreground">
             {new Date(item.created_at).toLocaleDateString('pt-BR')}

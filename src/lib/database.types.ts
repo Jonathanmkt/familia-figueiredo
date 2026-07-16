@@ -353,12 +353,53 @@ export type Database = {
         }
         Relationships: []
       }
+      songs: {
+        Row: {
+          id: string
+          lrclib_id: number | null
+          artist: string
+          title: string
+          album: string | null
+          plain_lyrics: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          lrclib_id?: number | null
+          artist: string
+          title: string
+          album?: string | null
+          plain_lyrics: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          lrclib_id?: number | null
+          artist?: string
+          title?: string
+          album?: string | null
+          plain_lyrics?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_songs: {
+        Args: { q: string }
+        Returns: {
+          id: string
+          lrclib_id: number | null
+          artist: string
+          title: string
+          album: string | null
+          plain_lyrics: string
+          created_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
