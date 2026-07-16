@@ -53,6 +53,25 @@ o técnico; Jonathan decide o negócio; dúvidas de VPS → prompt pro agente.
 
 ---
 
+## 📡 Status da infra (agente, 2026-07-16)
+
+**Pronto/testado:** Postgres `virtuemail-db` 1/1 healthy, interno, `postgres:5432` na rede
+`virtuemail` (testado). Stalwart na `Singanet`, alcançável em `http://stalwart:8080/jmap/`
+(testado). Payloads JMAP **todos testados** (Domain/Account query+get+set create+destroy, DKIM).
+Padrão de deploy conhecido: GHCR + GitHub Actions → `docker stack deploy /opt/<app>/stack.yml`,
+Traefik por labels (`websecure`+`letsencryptresolver`, port 3000), env_file. Apps Next pra espelhar:
+familia-figueiredo. ⚠️ GHCR nasce privado → tornar público.
+
+**Pendências (destravam o app):**
+- **Migration:** DB está **vazio** — aplicar `packages/db/drizzle/0000_*.sql` (agente roda meu SQL,
+  ou migrate-on-deploy).
+- **Conta de serviço Stalwart:** por ora usamos a **recovery admin** (dívida técnica: criar conta
+  de gestão dedicada antes de produção).
+- **⚠️ Token Cloudflare / DNS:** token atual é **só `virtuetech.com.br`**, sem `Zone:Create`. App
+  **não cria zonas de cliente** ainda. `cf_dns.py` é a fonte única de DNS do agente → **não escrever
+  na API em paralelo**. → **Decisão de política do Jonathan** (ver abaixo).
+- **@type do toggle de envio:** ainda não descoberto (não bloqueia onboarding).
+
 ## 🧩 Modelo de arquitetura (rascunho — a refinar nas perguntas)
 
 **Hierarquia lógica (o "tenant" vive na nossa automação, não no Stalwart CE):**
@@ -132,8 +151,13 @@ Ligar a lógica do core na infra real e dar UI.
   Cloudflare + Stalwart (GeradorUuid + RelogioReal). Type-check ok ✅
 - [x] 2.5 **Painel `apps/admin`** (Next.js 16) — onboardar cliente/domínio + criar caixas via server
   actions sobre o `Provisionador`. Type-check ok ✅
-  - [ ] ⏳ Depende do agente pra rodar: migration aplicada, conta de serviço Stalwart, token+accountId CF
-  - [ ] TODO **auth** (painel só da software house — proteger antes de expor) + deploy (stack Swarm)
+  - [x] **Deploy-prep:** `apps/admin/Dockerfile` (Next standalone monorepo) + `next.config` standalone +
+    `deploy/admin.stack.yml` (Singanet+virtuemail, Traefik `admin.virtuetech.com.br`, **basicauth de borda**)
+    + `deploy/webmail.stack.yml` (`email.virtuetech.com.br`, `JMAP_SERVER_URL`). Type-check ok ✅
+  - [ ] ⏳ Depende do agente/Jonathan pra rodar: **migration aplicada**, **token CF amplo**+accountId,
+    **A record** `admin.virtuetech.com.br`, **GHCR público**, e **CI** (repo no GitHub + Actions build→push).
+  - [ ] TODO **webmail Dockerfile** — ajustar p/ build monorepo/pnpm (o original usa npm lockfile removido); finalizar no build com o agente.
+  - [ ] TODO conta de serviço Stalwart (hoje = recovery admin) antes de produção.
 
 ### 🔜 Marco 3 — Entregabilidade & produção
 - [ ] 3.1 **TLS real** nas portas de e-mail (decisão A: Stalwart renova com token próprio × B: agente emite e sincroniza)
@@ -190,6 +214,10 @@ Ligar a lógica do core na infra real e dar UI.
 - **2026-07-16 — Webmail (P-B/B2):** construir próprio a partir de **fork do
   [root-fr/jmap-webmail](https://github.com/root-fr/jmap-webmail)** (MIT; Next.js 16 + TS + Tailwind v4 + Zustand).
 - **2026-07-16 — Casa do produto (P-C):** **monorepo** — `apps/webmail`, `apps/admin`, `packages/*`.
+- **2026-07-16 — DNS/token (decisão de política):** **ampliar o token** → o **app gerencia as zonas
+  dos clientes direto** na API Cloudflare (account-level: Zone Create + Zone Read + DNS Edit). O
+  **agente/`cf_dns.py`** continua dono **só de `virtuetech.com.br`** (infra). Zonas diferentes →
+  sem conflito de escrita. Jonathan cria o token amplo + passa `accountId`. (Resolve o A3 e o D1.)
 - **2026-07-16 — Domínio do cliente (P-A):** cada cliente usa o **próprio domínio**. Implicações:
   (a) **DKIM/SPF/DMARC por domínio** do cliente; (b) **cutover de MX** cuidadoso se o cliente já
   tem e-mail; (c) ⚠️ o DNS desses domínios **não está** na nossa zona `virtuetech.com.br` → o

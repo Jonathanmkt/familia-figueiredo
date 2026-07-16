@@ -5,10 +5,46 @@ import { Loader2, Search } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { buscarLetras, type LyricHit } from './actions';
+import type { LyricHit } from './actions';
 
 const MIN_CHARS = 3;
 const DEBOUNCE_MS = 350;
+
+// Cache em memória (por sessão): dedupe de buscas repetidas → menos chamadas ao LRCLIB.
+const searchCache = new Map<string, LyricHit[]>();
+
+/**
+ * Busca no LRCLIB DIRETO do navegador (não pelo servidor): distribui as chamadas pelos IPs
+ * residenciais de cada pessoa, evitando o IP único da VPS e a proteção anti-bot. CORS é aberto
+ * (`access-control-allow-origin: *`). O navegador manda o próprio User-Agent (aceito pelo LRCLIB).
+ */
+async function searchLyrics(q: string): Promise<LyricHit[]> {
+  const key = q.toLowerCase();
+  const cached = searchCache.get(key);
+  if (cached) return cached;
+  try {
+    const res = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const data: unknown = await res.json();
+    if (!Array.isArray(data)) return [];
+    const hits: LyricHit[] = (data as Array<Record<string, unknown>>)
+      .filter((d) => !d.instrumental && typeof d.plainLyrics === 'string' && d.plainLyrics)
+      .slice(0, 20)
+      .map((d) => ({
+        id: d.id as number,
+        trackName: d.trackName as string,
+        artistName: d.artistName as string,
+        albumName: (d.albumName as string | null) ?? null,
+        plainLyrics: d.plainLyrics as string,
+      }));
+    searchCache.set(key, hits);
+    return hits;
+  } catch {
+    return [];
+  }
+}
 
 /** Combobox de busca ao vivo de letras (LRCLIB), com debounce e navegação por teclado. */
 export function SongSearch({ onSelect }: { onSelect: (hit: LyricHit) => void }) {
@@ -36,7 +72,7 @@ export function SongSearch({ onSelect }: { onSelect: (hit: LyricHit) => void }) 
     setOpen(true);
     const t = setTimeout(async () => {
       try {
-        const hits = await buscarLetras(q);
+        const hits = await searchLyrics(q);
         if (latestQuery.current !== q) return; // já não é a busca atual → descarta
         setResults(hits);
         setHighlight(hits.length ? 0 : -1);
