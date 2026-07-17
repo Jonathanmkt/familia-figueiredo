@@ -30,6 +30,7 @@ import {
   salvarSelecao,
   saveProgress,
   traduzir,
+  traduzirLinhas,
   traduzirNoContexto,
   type BookLanguage,
   type ContextualTranslation,
@@ -130,6 +131,54 @@ export function Reader({
     window.speechSynthesis.speak(utterance);
     setSpeakingPage(true);
   }, [language, speakingPage]);
+
+  // Traduz a página: injeta a tradução (Azure) abaixo de cada parágrafo visível, dentro do iframe.
+  const [pageTranslated, setPageTranslated] = useState(false);
+  const [translatingPage, setTranslatingPage] = useState(false);
+  const togglePageTranslation = useCallback(() => {
+    if (translatingPage) return;
+    const doc = viewRef.current?.renderer?.getContents?.()[0]?.doc;
+    const win = doc?.defaultView;
+    if (!doc || !win) return;
+
+    if (pageTranslated) {
+      doc.querySelectorAll('.ff-page-tr').forEach((el) => el.remove());
+      setPageTranslated(false);
+      return;
+    }
+
+    const vw = win.innerWidth;
+    const vh = win.innerHeight;
+    const blocks = ([...doc.querySelectorAll('p, li, blockquote, h1, h2, h3, h4, h5, h6, dd, dt')] as HTMLElement[]).filter(
+      (el) => {
+        if (el.querySelector('.ff-page-tr') || el.classList.contains('ff-page-tr')) return false;
+        const txt = el.textContent?.trim();
+        if (!txt) return false;
+        const r = el.getBoundingClientRect();
+        return r.right > 0 && r.left < vw && r.bottom > 0 && r.top < vh;
+      }
+    );
+    if (!blocks.length) return;
+
+    setTranslatingPage(true);
+    traduzirLinhas(
+      blocks.map((b) => (b.textContent ?? '').replace(/\s+/g, ' ').trim()),
+      language
+    )
+      .then((trs) => {
+        blocks.forEach((b, i) => {
+          if (!trs[i]) return;
+          const el = doc.createElement('p');
+          el.className = 'ff-page-tr';
+          el.setAttribute('style', 'opacity:0.6;font-style:italic;margin:0.1em 0 0.5em;');
+          el.textContent = trs[i];
+          b.after(el);
+        });
+        setPageTranslated(true);
+      })
+      .catch(() => {})
+      .finally(() => setTranslatingPage(false));
+  }, [language, pageTranslated, translatingPage]);
 
   // Para o áudio ao sair do leitor.
   useEffect(() => () => window.speechSynthesis?.cancel(), []);
@@ -418,6 +467,17 @@ export function Reader({
             title={speakingPage ? 'Parar' : 'Ouvir esta página'}
           >
             {speakingPage ? <Square /> : <Volume2 />}
+          </Button>
+          <Button
+            variant={pageTranslated ? 'brand' : 'outline'}
+            size="icon"
+            className="size-8 shrink-0"
+            onClick={togglePageTranslation}
+            disabled={translatingPage}
+            aria-label={pageTranslated ? 'Ocultar tradução' : 'Traduzir esta página'}
+            title={pageTranslated ? 'Ocultar tradução' : 'Traduzir esta página'}
+          >
+            <Languages />
           </Button>
         </div>
       </header>

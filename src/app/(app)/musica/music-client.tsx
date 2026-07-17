@@ -1,18 +1,20 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
-import { ArrowLeft, BookmarkPlus, Check, Copy, Languages, Sparkles, Volume2, X } from 'lucide-react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { ArrowLeft, BookmarkPlus, Check, Copy, Languages, Music, Sparkles, Square, Volume2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { paragraphOf } from '@/lib/leitor/words';
 import {
   traduzir,
+  traduzirLinhas,
   traduzirNoContexto,
   type BookLanguage,
   type ContextualTranslation,
 } from '../leitor/actions';
-import { salvarSelecaoMusica, type Song } from './actions';
+import { salvarSelecaoMusica, type DeezerHit, type Song } from './actions';
+import { fetchLyrics } from './lyrics';
 import { SongSearch } from './song-search';
 
 type Sel = { text: string; paragraph: string; pos: { left: number; top: number } };
@@ -25,7 +27,39 @@ type Panel = {
 
 export function MusicClient() {
   const [track, setTrack] = useState<Song | null>(null);
+  // Música escolhida cuja letra ainda está sendo buscada (ou falhou).
+  const [pending, setPending] = useState<{ title: string; artist: string } | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const selToken = useRef(0);
   const language: BookLanguage = 'en-US'; // música: só inglês
+
+  // Ao escolher no Deezer: vai JÁ pra tela da letra (com loading) e busca no LRCLIB.
+  const pickSong = (hit: DeezerHit) => {
+    const token = ++selToken.current;
+    setTrack(null);
+    setSel(null);
+    setLoadError(false);
+    setPending({ title: hit.title, artist: hit.artist });
+    fetchLyrics(hit)
+      .then((song) => {
+        if (selToken.current !== token) return; // seleção obsoleta
+        if (song) {
+          setTrack(song);
+          setPending(null);
+        } else {
+          setLoadError(true);
+        }
+      })
+      .catch(() => {
+        if (selToken.current === token) setLoadError(true);
+      });
+  };
+
+  const cancelPending = () => {
+    selToken.current++; // cancela a busca em voo
+    setPending(null);
+    setLoadError(false);
+  };
 
   const lyricsRef = useRef<HTMLDivElement>(null);
   const [sel, setSel] = useState<Sel | null>(null);
@@ -40,6 +74,46 @@ export function MusicClient() {
     u.lang = language;
     window.speechSynthesis.speak(u);
   };
+
+  // Lê a letra inteira em voz alta (toggle). Para sozinho ao terminar / ao sair.
+  const [speakingAll, setSpeakingAll] = useState(false);
+  const toggleAllAudio = () => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (speakingAll) {
+      window.speechSynthesis.cancel();
+      setSpeakingAll(false);
+      return;
+    }
+    if (!track) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(track.lyrics);
+    u.lang = language;
+    u.onend = () => setSpeakingAll(false);
+    u.onerror = () => setSpeakingAll(false);
+    window.speechSynthesis.speak(u);
+    setSpeakingAll(true);
+  };
+  useEffect(() => () => window.speechSynthesis?.cancel(), []);
+
+  // Tradução linha a linha da letra (Azure em lote). Toggle: mostra/esconde.
+  const [lineTranslations, setLineTranslations] = useState<string[] | null>(null);
+  const [translatingAll, setTranslatingAll] = useState(false);
+  const toggleTranslateAll = () => {
+    if (!track || translatingAll) return;
+    if (lineTranslations) {
+      setLineTranslations(null);
+      return;
+    }
+    setTranslatingAll(true);
+    traduzirLinhas(track.lyrics.split('\n'), language)
+      .then((tr) => setLineTranslations(tr))
+      .catch(() => setFeedback('Não foi possível traduzir.'))
+      .finally(() => setTranslatingAll(false));
+  };
+  // Ao trocar de música, limpa a tradução.
+  useEffect(() => {
+    setLineTranslations(null);
+  }, [track]);
 
   const onSelect = () => {
     const container = lyricsRef.current;
@@ -109,13 +183,40 @@ export function MusicClient() {
     return (
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setTrack(null)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              window.speechSynthesis?.cancel();
+              setSpeakingAll(false);
+              setTrack(null);
+            }}
+          >
             <ArrowLeft /> Voltar
           </Button>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="truncate font-semibold">{track.title}</p>
             <p className="truncate text-xs text-muted-foreground">{track.artist}</p>
           </div>
+          <Button
+            variant={speakingAll ? 'brand' : 'outline'}
+            size="sm"
+            onClick={toggleAllAudio}
+            aria-label={speakingAll ? 'Parar áudio' : 'Ouvir a letra'}
+          >
+            {speakingAll ? <Square /> : <Volume2 />}
+            {speakingAll ? 'Parar' : 'Ouvir'}
+          </Button>
+          <Button
+            variant={lineTranslations ? 'brand' : 'outline'}
+            size="sm"
+            onClick={toggleTranslateAll}
+            disabled={translatingAll}
+            aria-label="Traduzir a música"
+          >
+            <Languages />
+            {translatingAll ? 'Traduzindo…' : lineTranslations ? 'Original' : 'Traduzir'}
+          </Button>
         </div>
 
         <Card>
@@ -127,9 +228,12 @@ export function MusicClient() {
               className="flex flex-col gap-1 leading-relaxed whitespace-pre-wrap select-text"
             >
               {track.lyrics.split('\n').map((line, i) => (
-                <p key={i} className={line.trim() ? '' : 'h-3'}>
-                  {line}
-                </p>
+                <div key={i} className={line.trim() ? '' : 'h-3'}>
+                  <p>{line}</p>
+                  {lineTranslations?.[i] && (
+                    <p className="text-sm text-primary/80 italic">{lineTranslations[i]}</p>
+                  )}
+                </div>
               ))}
             </div>
 
@@ -200,14 +304,79 @@ export function MusicClient() {
     );
   }
 
-  // ── Busca (catálogo local + fallback online) ──
+  // ── Buscando a letra (ou não encontrada) ──
+  if (pending) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={cancelPending}>
+            <ArrowLeft /> Voltar
+          </Button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold">{pending.title}</p>
+            <p className="truncate text-xs text-muted-foreground">{pending.artist}</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent>
+            {loadError ? (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <Music className="size-8 text-muted-foreground" />
+                <p className="font-medium">Não achamos a letra dessa música.</p>
+                <p className="text-sm text-muted-foreground">Tente outra versão ou outra música.</p>
+                <Button variant="outline" size="sm" onClick={cancelPending}>
+                  Buscar outra
+                </Button>
+              </div>
+            ) : (
+              <LyricsLoading title={pending.title} artist={pending.artist} />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── Busca no Deezer ──
+  return <SongSearch onSelect={pickSong} />;
+}
+
+const LOADING_LINES = [
+  'Afinando os instrumentos…',
+  'Pescando os versos no ar…',
+  'Ajustando o microfone…',
+  'Procurando a melodia certa…',
+  'Decorando o refrão pra você…',
+  'Subindo no palco…',
+];
+
+/** Loading da letra: equalizador animado + mensagem que troca sozinha. */
+function LyricsLoading({ title, artist }: { title: string; artist: string }) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI((n) => (n + 1) % LOADING_LINES.length), 2200);
+    return () => clearInterval(t);
+  }, []);
   return (
-    <SongSearch
-      onSelect={(song) => {
-        setTrack(song);
-        setSel(null);
-      }}
-    />
+    <div className="flex flex-col items-center justify-center gap-5 py-16 text-center">
+      <div className="flex h-12 items-end gap-1.5" aria-hidden>
+        {[55, 100, 40, 85, 65].map((h, b) => (
+          <span
+            key={b}
+            className="w-2 animate-bounce rounded-full bg-primary"
+            style={{ height: `${h}%`, animationDelay: `${b * 120}ms`, animationDuration: '900ms' }}
+          />
+        ))}
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm text-muted-foreground">Aguarde, estamos trazendo a letra de</p>
+        <p className="text-lg font-semibold">
+          {title} <span className="font-normal text-muted-foreground">— {artist}</span>
+        </p>
+      </div>
+      <p className="text-xs text-primary/70 italic">{LOADING_LINES[i]}</p>
+    </div>
   );
 }
 

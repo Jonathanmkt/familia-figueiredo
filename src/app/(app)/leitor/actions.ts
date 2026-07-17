@@ -109,6 +109,50 @@ export async function traduzir(text: string, sourceLang: BookLanguage): Promise<
   return translated;
 }
 
+/**
+ * Traduz VÁRIAS linhas de uma vez (Azure batch) — usado no "traduzir página/música".
+ * Preserva o alinhamento por índice; linhas em branco voltam vazias. Sem cache (1 request por lote).
+ */
+export async function traduzirLinhas(lines: string[], sourceLang: BookLanguage): Promise<string[]> {
+  const out: string[] = new Array(lines.length).fill('');
+  const idx: number[] = [];
+  const payload: { text: string }[] = [];
+  lines.forEach((l, i) => {
+    if (l.trim()) {
+      idx.push(i);
+      payload.push({ text: l });
+    }
+  });
+  if (!payload.length) return out;
+
+  const key = process.env.AZURE_TRANSLATOR_KEY;
+  const region = process.env.AZURE_TRANSLATOR_REGION;
+  if (!key || !region) {
+    throw new Error('Tradução indisponível: configure AZURE_TRANSLATOR_KEY e AZURE_TRANSLATOR_REGION.');
+  }
+  const { from, to } = azurePair(sourceLang);
+
+  // Azure aceita muitos itens por request; lotes de 90 por segurança.
+  for (let start = 0; start < payload.length; start += 90) {
+    const chunk = payload.slice(start, start + 90);
+    const res = await fetch(`${AZURE_ENDPOINT}?api-version=3.0&from=${from}&to=${to}`, {
+      method: 'POST',
+      headers: {
+        'Ocp-Apim-Subscription-Key': key,
+        'Ocp-Apim-Subscription-Region': region,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(chunk),
+    });
+    if (!res.ok) throw new Error(`Tradução falhou (${res.status})`);
+    const data = (await res.json()) as { translations: { text: string }[] }[];
+    data.forEach((d, j) => {
+      out[idx[start + j]] = d.translations?.[0]?.text ?? '';
+    });
+  }
+  return out;
+}
+
 export type ContextualTranslation = { traducao: string; explicacao: string };
 
 /** Tradução no contexto: gpt-4o-mini recebe o parágrafo inteiro e explica a expressão nele. */
